@@ -51,6 +51,7 @@ jobs:
 
           # Run the new container with DATABASE_URL from secrets
           docker run -d -p 3000:3000 \
+            --network app-network \
             -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
             --name crud-service-container sidvish/crud-service:latest
 
