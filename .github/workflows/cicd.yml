@@ -47,7 +47,7 @@ jobs:
           docker pull sidvish/crud-service:latest
 
           # Stop and remove the existing container (if any)
-          docker ps -q -f "crud-service-container" | grep -q . && docker stop crud-service-container && docker rm crud-service-container
+          docker stop crud-service-container && docker rm crud-service-container
 
           # Run the new container with DATABASE_URL from secrets
           docker run -d -p 3000:3000 \
