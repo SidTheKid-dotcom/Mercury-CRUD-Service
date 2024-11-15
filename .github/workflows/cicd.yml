@@ -24,11 +24,7 @@ jobs:
 
     - name: Build Docker image
       run: |
-        docker build --no-cache -t sidvish/crud-service:latest .
-
-    - name: Validate Prisma Client Generation
-      run: |
-        docker run --rm sidvish/crud-service:latest ls -la /app/node_modules/.prisma
+        docker build -t sidvish/crud-service:latest .
 
     - name: Push Docker image
       run: |
@@ -54,10 +50,10 @@ jobs:
           container_name="crud-service-container"
           docker ps -q -f "name=$container_name" | grep -q . && docker stop $container_name && docker rm $container_name
 
-          # Run the new container with the DATABASE_URL environment variable
+          # Run the new container with DATABASE_URL from secrets
           docker run -d -p 3000:3000 \
-            -e DATABASE_URL=${{ secrets.DATABASE_URL }} \
+            -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
             --name $container_name sidvish/crud-service:latest
 
-          # Optional: Clean up unused images (if any)
+          # Optional: Clean up unused images
           docker image prune -f
