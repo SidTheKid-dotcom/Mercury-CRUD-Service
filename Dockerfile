@@ -13,8 +13,14 @@ RUN npm install
 # Copy the rest of your application code
 COPY . .
 
+# Install TypeScript globally (if not included in your package.json)
+RUN npm install -g typescript
+
 # Generate the Prisma client
 RUN npx prisma generate
+
+# Compile TypeScript to JavaScript (output to dist folder)
+RUN tsc -b
 
 # Expose the port your app runs on
 EXPOSE 8080
