@@ -29,4 +29,4 @@ RUN npm run build
 EXPOSE 3000
 
 # Command to run your app, including Prisma client generation and migration
-CMD ["sh", "-c", "npx prisma generate && npx prisma migrate deploy && npm start"]
+CMD ["sh", "-c", "npx prisma migrate deploy && npx prisma generate && npm start"]
