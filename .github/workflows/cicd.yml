@@ -35,7 +35,7 @@ jobs:
     needs: build  # This job will only run after the build job completes
 
     steps:
-    - name: SSH to EC2 and pull Docker image
+    - name: SSH to EC2 and deploy Docker image
       uses: appleboy/ssh-action@master
       with:
         host: ${{ secrets.EC2_HOST }}

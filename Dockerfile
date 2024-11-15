@@ -1,32 +1,23 @@
-# Use Node.js official image as a base
+# Use the official Node.js image as a base
 FROM node:18
 
-# Set working directory inside container
-WORKDIR /app
+# Set the working directory
+WORKDIR /usr/src/app
 
-# Copy package.json and package-lock.json to install dependencies
+# Copy package.json and package-lock.json (if available)
 COPY package*.json ./
 
 # Install dependencies
 RUN npm install
 
-# Step 5: Install TypeScript (dev dependency)
-RUN npm install -D typescript
-
-# Copy the rest of the application files
+# Copy the rest of your application code
 COPY . .
-
-# Install Prisma CLI globally (optional, but useful for migrations)
-RUN npm install -g prisma
 
 # Generate the Prisma client
 RUN npx prisma generate
 
-# Build the TypeScript code
-RUN npm run build
+# Expose the port your app runs on
+EXPOSE 8080
 
-# Expose the app port
-EXPOSE 3000
-
-# Command to run your app, including Prisma client generation and migration
-CMD ["sh", "-c", "npx prisma migrate deploy && npx prisma generate && npm start"]
+# Command to run your app, including migration on start
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]
