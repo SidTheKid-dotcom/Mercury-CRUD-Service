@@ -28,5 +28,5 @@ RUN npm run build
 # Expose the app port
 EXPOSE 3000
 
-# Command to run your app, including migration on start
-CMD ["sh", "-c", "npx prisma migrate deploy && npm start"]
+# Command to run your app, including Prisma client generation and migration
+CMD ["sh", "-c", "npx prisma generate && npx prisma migrate deploy && npm start"]
