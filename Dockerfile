@@ -16,11 +16,17 @@ RUN npm install -D typescript
 # Copy the rest of the application files
 COPY . .
 
+# Install Prisma CLI globally (optional, but useful for migrations)
+RUN npm install -g prisma
+
+# Generate the Prisma client
+RUN npx prisma generate
+
 # Build the TypeScript code
 RUN npm run build
 
 # Expose the app port
 EXPOSE 3000
 
-# Start the app
-CMD ["npm", "start"]
+# Command to run your app, including migration on start
+CMD ["sh", "-c", "npx prisma migrate deploy && npm start"]
