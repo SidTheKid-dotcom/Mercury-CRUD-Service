@@ -1,0 +1,33 @@
+// This is your Prisma schema file
+// Learn more about Prisma at https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Query {
+  id        Int       @id @default(autoincrement())
+  content   String
+  createdAt DateTime  @default(now())
+  answers   Answer[]
+  tags      Tag[]     @relation("QueryTags")
+}
+
+model Tag {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  queries   Query[]   @relation("QueryTags")
+}
+
+model Answer {
+  id        Int       @id @default(autoincrement())
+  content   String
+  createdAt DateTime  @default(now())
+  queryId   Int
+  query     Query     @relation(fields: [queryId], references: [id])
+}
