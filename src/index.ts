@@ -7,6 +7,11 @@ const app = express();
 // Middleware
 app.use(express.json());
 
+// Rest Endpoint
+app.get("/", (req: any, res: any) => {
+  return res.send("Hello, world!");
+});
+
 // Routes
 app.use("/api", queryRoutes);
 
