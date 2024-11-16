@@ -1,15 +1,16 @@
-// src/controllers/queryController.ts
-import { Request, Response } from "express";
-import prisma from "../prisma";
-import client from "../elasticSearch";
-import { PostQueryInput, AnswerQueryInput } from "../types/queryTypes";
+import { Request, Response } from 'express';
+import prisma from '../prisma';
+import client from '../elasticSearch'; // Your ElasticSearch client
+import { PostQueryInput, AnswerQueryInput } from '../types/queryTypes';
 
 export const postQuery = async (req: Request, res: Response) => {
-  const { content, tags }: PostQueryInput = req.body; // Accept tags as an array of strings
+  const { content, tags, creatorId }: PostQueryInput = req.body;
+
   try {
     const query = await prisma.query.create({
       data: {
         content,
+        creatorId, // The user who created the query
         tags: {
           connectOrCreate: tags.map((tag) => ({
             where: { name: tag },
@@ -20,10 +21,10 @@ export const postQuery = async (req: Request, res: Response) => {
       include: { tags: true },
     });
 
-    // Index the new query into Elasticsearch
+    // Index the query in Elasticsearch
     await client.index({
       index: 'queries',
-      id: query.id.toString(), // Use the query ID as the document ID
+      id: query.id.toString(),
       document: {
         content: query.content,
         tags: query.tags.map(tag => tag.name),
@@ -33,8 +34,91 @@ export const postQuery = async (req: Request, res: Response) => {
 
     res.status(201).json(query);
   } catch (error) {
-    console.error('Error indexing query:', error);
+    console.error(error);
     res.status(500).json({ error: "Error posting query" });
+  }
+};
+
+export const answerQuery = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { content, answerCreatorId }: AnswerQueryInput = req.body;
+
+  try {
+    const answer = await prisma.answer.create({
+      data: {
+        content,
+        queryId: parseInt(id),
+        answerCreatorId,
+      },
+    });
+
+    res.status(201).json(answer);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error answering query" });
+  }
+};
+
+export const voteQuery = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { userId, type } = req.body; // type: 'UPVOTE' or 'DOWNVOTE'
+
+  try {
+    // Ensure user can only vote once per query
+    const existingVote = await prisma.queryVote.findFirst({
+      where: {
+        queryId: parseInt(id),
+        userId,
+      },
+    });
+
+    if (existingVote) {
+      res.status(400).json({ error: "You have already voted on this query" });
+      return;
+    }
+
+    const vote = await prisma.queryVote.create({
+      data: {
+        queryId: parseInt(id),
+        userId,
+        type,
+      },
+    });
+
+    // Update query vote counts
+    const query = await prisma.query.update({
+      where: { id: parseInt(id) },
+      data: {
+        upvotesCount: { increment: type === 'UPVOTE' ? 1 : 0 },
+        downvotesCount: { increment: type === 'DOWNVOTE' ? 1 : 0 },
+      },
+    });
+
+    res.status(201).json({ vote, query });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error voting on query" });
+  }
+};
+
+export const reportSpam = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { userId }: { userId: number } = req.body;
+
+  try {
+    const query = await prisma.query.update({
+      where: { id: parseInt(id) },
+      data: {
+        reportedBy: {
+          connect: { id: userId },
+        },
+      },
+    });
+
+    res.status(200).json(query);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error reporting spam" });
   }
 };
 
@@ -63,12 +147,12 @@ export const searchQuery = async (req: Request, res: Response) => {
           ],
           filter: tag
             ? [
-                {
-                  term: {
-                    tags: tag as string,
-                  },
+              {
+                term: {
+                  tags: tag as string,
                 },
-              ]
+              },
+            ]
             : [],
         },
       },
@@ -83,47 +167,29 @@ export const searchQuery = async (req: Request, res: Response) => {
   }
 };
 
-
-// POST /queries/:id/answer - Answer a specific query
-export const answerQuery = async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const { content }: AnswerQueryInput = req.body;
-  try {
-    const answer = await prisma.answer.create({
-      data: {
-        content,
-        queryId: parseInt(id),
-      },
-    });
-    res.status(201).json(answer);
-  } catch (error) {
-    res.status(500).json({ error: "Error answering query" });
-  }
-};
-
 // GET /queries - Get all queries (feed)
 export const getFeed = async (req: Request, res: Response) => {
-    const { tag } = req.query; // Optional tag filter
-    console.log(tag);
-    try {
-        const queries = await prisma.query.findMany({
-            where: tag
-                ? {
-                    tags: {
-                        some: { name: tag as string },
-                    },
-                }
-                : undefined,
-            include: {
-                answers: true,
-                tags: true,
-            },
-            orderBy: {
-                createdAt: "desc",
-            },
-        });
-        res.status(200).json(queries);
-    } catch (error) {
-        res.status(500).json({ error: "Error retrieving feed" });
-    }
+  const { tag } = req.query; // Optional tag filter
+  console.log(tag);
+  try {
+    const queries = await prisma.query.findMany({
+      where: tag
+        ? {
+          tags: {
+            some: { name: tag as string },
+          },
+        }
+        : undefined,
+      include: {
+        answers: true,
+        tags: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+    res.status(200).json(queries);
+  } catch (error) {
+    res.status(500).json({ error: "Error retrieving feed" });
+  }
 };

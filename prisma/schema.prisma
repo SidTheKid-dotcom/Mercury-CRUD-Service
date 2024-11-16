@@ -1,5 +1,8 @@
-// This is your Prisma schema file
-// Learn more about Prisma at https://pris.ly/d/prisma-schema
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
   provider = "prisma-client-js"
@@ -10,12 +13,40 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id           Int           @id @default(autoincrement())
+  email        String        @unique
+  designation  Designation
+  department   Department    @relation(fields: [departmentId], references: [id])
+  departmentId Int
+  spamReports  Query[]       @relation("SpamReports")
+  votes        QueryVote[]   // Reverse relation for upvotes/downvotes
+  createdQueries Query[]     // Queries created by this user
+  answers      Answer[]      // Answers posted by this user
+}
+
 model Query {
-  id        Int       @id @default(autoincrement())
-  content   String
-  createdAt DateTime  @default(now())
-  answers   Answer[]
-  tags      Tag[]     @relation("QueryTags")
+  id              Int       @id @default(autoincrement())
+  content         String
+  createdAt       DateTime  @default(now())
+  answers         Answer[]
+  tags            Tag[]     @relation("QueryTags")
+  votes           QueryVote[]
+  reportedBy      User[]    @relation("SpamReports")
+  upvotesCount    Int       @default(0)  // Store count of upvotes
+  downvotesCount  Int       @default(0)  // Store count of downvotes
+  creatorId       Int       // User who created the query
+  creator         User      @relation(fields: [creatorId], references: [id]) // Relation to creator
+}
+
+model Answer {
+  id              Int       @id @default(autoincrement())
+  content         String
+  createdAt       DateTime  @default(now())
+  queryId         Int
+  query           Query     @relation(fields: [queryId], references: [id])
+  answerCreatorId Int       // User who created the answer
+  answerCreator   User      @relation(fields: [answerCreatorId], references: [id]) // Relation to answer creator
 }
 
 model Tag {
@@ -24,10 +55,28 @@ model Tag {
   queries   Query[]   @relation("QueryTags")
 }
 
-model Answer {
+model QueryVote {
   id        Int       @id @default(autoincrement())
-  content   String
-  createdAt DateTime  @default(now())
   queryId   Int
   query     Query     @relation(fields: [queryId], references: [id])
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id])
+  type      VoteType
+}
+
+model Department {
+  id    Int      @id @default(autoincrement())
+  name  String   @unique
+  users User[]
+}
+
+enum Designation {
+  employee
+  manager
+  HOD
+}
+
+enum VoteType {
+  UPVOTE
+  DOWNVOTE
 }

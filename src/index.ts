@@ -1,6 +1,6 @@
 // src/app.ts
 import express from "express";
-import queryRoutes from "./routes/queryRoutes";
+import routes from './routes/routes';
 
 const app = express();
 
@@ -13,7 +13,7 @@ app.get("/", (req: any, res: any) => {
 });
 
 // Routes
-app.use("/api", queryRoutes);
+app.use('/api', routes);
 
 // Server
 const PORT = process.env.PORT || 3000;
