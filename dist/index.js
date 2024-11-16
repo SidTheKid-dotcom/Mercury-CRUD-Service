@@ -9,6 +9,10 @@ const queryRoutes_1 = __importDefault(require("./routes/queryRoutes"));
 const app = (0, express_1.default)();
 // Middleware
 app.use(express_1.default.json());
+// Rest Endpoint
+app.get("/", (req, res) => {
+    return res.send("Hello, world!");
+});
 // Routes
 app.use("/api", queryRoutes_1.default);
 // Server
