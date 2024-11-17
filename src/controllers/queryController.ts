@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import prisma from '../prisma';
 import client from '../elasticSearch'; // Your ElasticSearch client
 import { PostQueryInput, AnswerQueryInput } from '../types/queryTypes';
+import { publishEvent } from "../rabbitmq";
 
 export const postQuery = async (req: Request, res: Response) => {
   const { content, tags, creatorId }: PostQueryInput = req.body;
@@ -32,6 +33,18 @@ export const postQuery = async (req: Request, res: Response) => {
       },
     });
 
+    const event = {
+      eventType: "QueryCreated",
+      data: {
+        queryId: query.id,
+        content: query.content,
+        tags: query.tags.map(tag => tag.name),
+        creatorId: query.creatorId,
+        createdAt: query.createdAt,
+      },
+    };
+    await publishEvent(event);
+
     res.status(201).json(query);
   } catch (error) {
     console.error(error);
@@ -51,6 +64,19 @@ export const answerQuery = async (req: Request, res: Response) => {
         answerCreatorId,
       },
     });
+
+    // Publish an event to RabbitMQ
+    const event = {
+      eventType: "AnswerCreated",
+      data: {
+        answerId: answer.id,
+        content: answer.content,
+        queryId: answer.queryId,
+        answerCreatorId: answer.answerCreatorId,
+        createdAt: answer.createdAt,
+      },
+    };
+    await publishEvent(event);
 
     res.status(201).json(answer);
   } catch (error) {
