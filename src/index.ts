@@ -1,7 +1,7 @@
 // src/app.ts
 import express from "express";
 import routes from './routes/routes';
-import { connectToRabbitMQ } from "./rabbitmq";
+import { connectToRabbitMQ } from "./services/rabbitmq";
 
 const app = express();
 

@@ -53,6 +53,7 @@ jobs:
           docker run -d -p 3000:3000 \
             --network app-network \
             -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+            -e GEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}" \
             --name crud-service-container sidvish/crud-service:latest
 
           # Optional: Clean up unused images
