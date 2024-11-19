@@ -65,6 +65,24 @@ export const answerQuery = async (req: Request, res: Response) => {
       },
     });
 
+    // Increment the answersCount for the query
+    const query = await prisma.query.update({
+      where: { id: parseInt(id) },
+      data: {
+        answersCount: { increment: 1 },
+      },
+    });
+
+    // Update Elasticsearch index to reflect new answersCount and priority
+    await client.update({
+      index: 'queries',
+      id: id.toString(),
+      doc: {
+        answers_count: query.answersCount,
+        priority: 2*query.answersCount + query.upvotesCount - query.downvotesCount,
+      },
+    });
+
     // Publish an event to RabbitMQ
     const event = {
       eventType: "AnswerCreated",
@@ -120,6 +138,17 @@ export const voteQuery = async (req: Request, res: Response) => {
       },
     });
 
+    // Update Elasticsearch index
+    await client.update({
+      index: 'queries',
+      id: id.toString(),
+      doc: {
+        upvotes: query.upvotesCount,
+        downvotes: query.downvotesCount,
+        priority: 2*query.answersCount + query.upvotesCount - query.downvotesCount,
+      },
+    });
+
     res.status(201).json({ vote, query });
   } catch (error) {
     console.error(error);
@@ -149,42 +178,52 @@ export const reportSpam = async (req: Request, res: Response) => {
 };
 
 export const searchQuery = async (req: Request, res: Response) => {
-  const { search, tag } = req.query; // Accept search term and optional tag filter
+  const { search, tag } = req.query;
+
   try {
     if (!search) {
       res.status(400).json({ error: "Search term is required" });
       return;
     }
 
-    // Search using Elasticsearch
     const esResult = await client.search({
       index: 'queries',
       query: {
-        bool: {
-          must: [
-            {
-              match: {
-                content: {
-                  query: search as string,
-                  fuzziness: 'AUTO', // Allows for typo tolerance
+        function_score: {
+          query: {
+            bool: {
+              must: [
+                {
+                  match: {
+                    content: {
+                      query: search as string,
+                      fuzziness: 'AUTO',
+                    },
+                  },
                 },
-              },
+              ],
+              filter: tag
+                ? [
+                  {
+                    term: {
+                      tags: tag as string,
+                    },
+                  },
+                ]
+                : [],
             },
-          ],
-          filter: tag
-            ? [
-              {
-                term: {
-                  tags: tag as string,
-                },
-              },
-            ]
-            : [],
+          },
+          // Use priority to influence scoring
+          field_value_factor: {
+            field: 'priority',
+            factor: 1.0,
+            modifier: 'log1p', // Optional: logarithmic scaling for priority
+            missing: 0,
+          },
         },
       },
     });
 
-    // Extract and format search hits
     const hits = esResult.hits.hits.map((hit: any) => hit._source);
     res.status(200).json(hits);
   } catch (error) {

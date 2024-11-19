@@ -35,6 +35,7 @@ model Query {
   reportedBy      User[]    @relation("SpamReports")
   upvotesCount    Int       @default(0)  // Store count of upvotes
   downvotesCount  Int       @default(0)  // Store count of downvotes
+  answersCount    Int       @default(0)  // Store count of answers
   creatorId       Int       // User who created the query
   creator         User      @relation(fields: [creatorId], references: [id]) // Relation to creator
 }
