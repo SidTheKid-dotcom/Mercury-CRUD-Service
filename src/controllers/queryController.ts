@@ -180,7 +180,7 @@ export const reportSpam = async (req: Request, res: Response) => {
 
 export const searchQuery = async (req: Request, res: Response) => {
   const { search, tag } = req.query;
-  const K = 3;
+  const K = 3; // Number of top results to return
 
   try {
     if (!search) {
@@ -188,8 +188,8 @@ export const searchQuery = async (req: Request, res: Response) => {
       return;
     }
 
-    // Step 1: Search Elasticsearch for relevant queries
-    const esResult = await client.search({
+    // Step 1: Search Elasticsearch for relevant queries (user queries)
+    const esQueryResult = await client.search({
       index: 'queries',
       query: {
         function_score: {
@@ -227,14 +227,15 @@ export const searchQuery = async (req: Request, res: Response) => {
       size: K, // Top K hits
     });
 
-    const hits = esResult.hits.hits.map((hit: any) => ({
-      queryID: parseInt(hit._id, 10), // Convert _id to integer
+    // Extract the relevant data from query search results
+    const queryHits = esQueryResult.hits.hits.map((hit: any) => ({
+      queryID: parseInt(hit._id, 10),
       content: hit._source.content,
     }));
 
     // Step 2: Fetch answers for each query from Prisma
     const queriesWithAnswers = await Promise.all(
-      hits.map(async (hit: any) => {
+      queryHits.map(async (hit: any) => {
         const answers = await prisma.answer.findMany({
           where: {
             queryId: hit.queryID,
@@ -244,7 +245,7 @@ export const searchQuery = async (req: Request, res: Response) => {
             createdAt: true,
             answerCreator: {
               select: {
-                email: true, // Assuming the User model has a `name` field
+                email: true,
               },
             },
           },
@@ -261,7 +262,28 @@ export const searchQuery = async (req: Request, res: Response) => {
       })
     );
 
-    // Step 3: Generate AI response
+    // Step 3: Search Elasticsearch for codebase files (project files)
+    const esCodebaseResult = await client.search({
+      index: 'codebase-index',
+      query: {
+        multi_match: {
+          query: search as string,
+          fields: ["content", "file_path", "project_name^2"],
+        },
+      },
+      size: K, // Top K hits
+    });
+
+    // Extract codebase file results
+    const codebaseHits = esCodebaseResult.hits.hits.map((hit: any) => ({
+      filename: hit._source.filename,
+      file_path: hit._source.file_path,
+      project_name: hit._source.project_name,
+      github_url: hit._source.github_url,
+      content_highlight: hit.highlight?.content?.[0] || null, // If highlighted content exists
+    }));
+
+    // Step 4: Generate AI response based on query results
     let aiResponse;
     if (queriesWithAnswers.some((q) => q.answers.length > 0)) {
       aiResponse = await generateAIResponse(search as string, queriesWithAnswers);
@@ -269,14 +291,16 @@ export const searchQuery = async (req: Request, res: Response) => {
       aiResponse = "Not enough data for a detailed response. Please refine your search.";
     }
 
-    // Step 4: Return the response
+    // Step 5: Return the response with both query results and codebase results
     res.status(200).json({
-      results: hits,
-      queriesWithAnswers: queriesWithAnswers,
+      results: {
+        queries: queriesWithAnswers,
+        codebase: codebaseHits,
+      },
       aiSuggestion: aiResponse,
     });
   } catch (error) {
-    console.error('Error performing search:', error);
+    console.error("Error performing search:", error);
     res.status(500).json({ error: "Error performing search" });
   }
 };
