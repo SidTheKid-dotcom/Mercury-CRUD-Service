@@ -2,6 +2,7 @@ import { Router } from 'express';
 import userRoutes from './userRoutes'; // Import user-related routes
 import queryRoutes from './queryRoutes'; // Import query-related routes
 import folderRoutes from './folderRoute';
+import analyticsRoutes from './analyticsRoute';
 
 const router: Router = Router();
 
@@ -13,5 +14,8 @@ router.use('/query', queryRoutes);
 
 // Route for folder-upload endpoint
 router.use('/upload', folderRoutes);
+
+// Route for analytics endpoint
+router.use('/analytics', analyticsRoutes);
 
 export default router;

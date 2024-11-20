@@ -14,60 +14,81 @@ datasource db {
 }
 
 model User {
-  id           Int           @id @default(autoincrement())
-  email        String        @unique
-  designation  Designation
-  department   Department    @relation(fields: [departmentId], references: [id])
-  departmentId Int
-  spamReports  Query[]       @relation("SpamReports")
-  votes        QueryVote[]   // Reverse relation for upvotes/downvotes
-  createdQueries Query[]     // Queries created by this user
-  answers      Answer[]      // Answers posted by this user
+  id             Int         @id @default(autoincrement())
+  email          String      @unique
+  designation    Designation
+  department     Department  @relation(fields: [departmentId], references: [id])
+  departmentId   Int
+  spamReports    Query[]     @relation("SpamReports")
+  votes          QueryVote[] // Reverse relation for upvotes/downvotes
+  createdQueries Query[] // Queries created by this user
+  answers        Answer[] // Answers posted by this user
 }
 
 model Query {
-  id              Int       @id @default(autoincrement())
-  content         String
-  createdAt       DateTime  @default(now())
-  answers         Answer[]
-  tags            Tag[]     @relation("QueryTags")
-  votes           QueryVote[]
-  reportedBy      User[]    @relation("SpamReports")
-  upvotesCount    Int       @default(0)  // Store count of upvotes
-  downvotesCount  Int       @default(0)  // Store count of downvotes
-  answersCount    Int       @default(0)  // Store count of answers
-  creatorId       Int       // User who created the query
-  creator         User      @relation(fields: [creatorId], references: [id]) // Relation to creator
+  id             Int         @id @default(autoincrement())
+  content        String
+  createdAt      DateTime    @default(now())
+  answers        Answer[]
+  tags           Tag[]       @relation("QueryTags")
+  votes          QueryVote[]
+  reportedBy     User[]      @relation("SpamReports")
+  upvotesCount   Int         @default(0) // Store count of upvotes
+  downvotesCount Int         @default(0) // Store count of downvotes
+  answersCount   Int         @default(0) // Store count of answers
+  creatorId      Int // User who created the query
+  creator        User        @relation(fields: [creatorId], references: [id]) // Relation to creator
 }
 
 model Answer {
-  id              Int       @id @default(autoincrement())
+  id              Int      @id @default(autoincrement())
   content         String
-  createdAt       DateTime  @default(now())
+  createdAt       DateTime @default(now())
   queryId         Int
-  query           Query     @relation(fields: [queryId], references: [id])
-  answerCreatorId Int       // User who created the answer
-  answerCreator   User      @relation(fields: [answerCreatorId], references: [id]) // Relation to answer creator
+  query           Query    @relation(fields: [queryId], references: [id])
+  answerCreatorId Int // User who created the answer
+  answerCreator   User     @relation(fields: [answerCreatorId], references: [id]) // Relation to answer creator
 }
 
 model Tag {
-  id        Int       @id @default(autoincrement())
-  name      String    @unique
-  queries   Query[]   @relation("QueryTags")
+  id      Int     @id @default(autoincrement())
+  name    String  @unique
+  queries Query[] @relation("QueryTags")
 }
 
 model QueryVote {
-  id        Int       @id @default(autoincrement())
-  queryId   Int
-  query     Query     @relation(fields: [queryId], references: [id])
-  userId    Int
-  user      User      @relation(fields: [userId], references: [id])
-  type      VoteType
+  id      Int      @id @default(autoincrement())
+  queryId Int
+  query   Query    @relation(fields: [queryId], references: [id])
+  userId  Int
+  user    User     @relation(fields: [userId], references: [id])
+  type    VoteType
+}
+
+model QueryAnalytics {
+  id          Int         @id @default(autoincrement())
+  tagName     String      @unique
+  queryCount  Int         @default(0)
+  answerCount Int         @default(0)
+  dailyData   DailyData[] // Link to daily data for granular analytics
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model DailyData {
+  id               Int            @id @default(autoincrement())
+  date             DateTime
+  queries          Int            @default(0)
+  answers          Int            @default(0)
+  queryAnalyticsId Int
+  queryAnalytics   QueryAnalytics @relation(fields: [queryAnalyticsId], references: [id])
+
+  @@unique([date, queryAnalyticsId]) // Composite unique constraint
 }
 
 model Department {
-  id    Int      @id @default(autoincrement())
-  name  String   @unique
+  id    Int    @id @default(autoincrement())
+  name  String @unique
   users User[]
 }
 

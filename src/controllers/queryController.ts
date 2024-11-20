@@ -46,6 +46,43 @@ export const postQuery = async (req: Request, res: Response) => {
     };
     await publishEvent(event);
 
+    // Update QueryAnalytics
+    const dateKey = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+    const today = new Date(dateKey);
+
+    await Promise.all(
+      query.tags.map(async (tag) => {
+        // Upsert QueryAnalytics for the tag
+        const queryAnalytics = await prisma.queryAnalytics.upsert({
+          where: { tagName: tag.name },
+          update: { queryCount: { increment: 1 } },
+          create: {
+            tagName: tag.name,
+            queryCount: 1, // Initial query count for a new tag
+          },
+        });
+
+        // Ensure the `queryAnalytics.id` is correctly used in DailyData
+        await prisma.dailyData.upsert({
+          where: {
+            date_queryAnalyticsId: {
+              date: today, // Ensure `today` is formatted as YYYY-MM-DD
+              queryAnalyticsId: queryAnalytics.id,
+            },
+          },
+          update: {
+            queries: { increment: 1 }, // Increment query count for today
+          },
+          create: {
+            date: today,
+            queries: 1, // Initial query count for the new date
+            answers: 0, // Initialize answers count
+            queryAnalyticsId: queryAnalytics.id,
+          },
+        });
+      })
+    );
+
     res.status(201).json(query);
   } catch (error) {
     console.error(error);
@@ -72,6 +109,7 @@ export const answerQuery = async (req: Request, res: Response) => {
       data: {
         answersCount: { increment: 1 },
       },
+      include: { tags: true }, // Include tags for analytics
     });
 
     // Update Elasticsearch index to reflect new answersCount and priority
@@ -96,6 +134,37 @@ export const answerQuery = async (req: Request, res: Response) => {
       },
     };
     await publishEvent(event);
+
+    // Update QueryAnalytics
+    const dateKey = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+    const today = new Date(dateKey);
+
+    await Promise.all(
+      query.tags.map(async (tag) => {
+        const queryAnalytics = await prisma.queryAnalytics.upsert({
+          where: { tagName: tag.name },
+          update: { answerCount: { increment: 1 } },
+          create: { tagName: tag.name },
+        });
+
+        await prisma.dailyData.upsert({
+          where: {
+            date_queryAnalyticsId: {
+              date: today,
+              queryAnalyticsId: queryAnalytics.id,
+            },
+          },
+          update: { answers: { increment: 1 } },
+          create: {
+            date: today,
+            queries: 0,
+            answers: 1,
+            queryAnalyticsId: queryAnalytics.id,
+          },
+        });
+      })
+    );
+
 
     res.status(201).json(answer);
   } catch (error) {
@@ -262,7 +331,38 @@ export const searchQuery = async (req: Request, res: Response) => {
       })
     );
 
-    // Step 3: Search Elasticsearch for codebase files (project files)
+    // Step 4: Generate AI response based on query results
+    let aiResponse;
+    if (queriesWithAnswers.some((q) => q.answers.length > 0)) {
+      aiResponse = await generateAIResponse(search as string, queriesWithAnswers);
+    } else {
+      aiResponse = "Not enough data for a detailed response. Please refine your search.";
+    }
+
+    // Step 5: Return the response with both query results and codebase results
+    res.status(200).json({
+      results: {
+        queries: queriesWithAnswers,
+      },
+      aiSuggestion: aiResponse,
+    });
+  } catch (error) {
+    console.error("Error performing search:", error);
+    res.status(500).json({ error: "Error performing search" });
+  }
+};
+
+export const searchGitHub = async (req: Request, res: Response) => {
+  const { search } = req.query;
+  const K = 3; // Number of top results to return
+
+  try {
+    if (!search) {
+      res.status(400).json({ error: "Search term is required" });
+      return;
+    }
+
+    // Search Elasticsearch for codebase files (project files)
     const esCodebaseResult = await client.search({
       index: 'codebase-index',
       query: {
@@ -283,27 +383,15 @@ export const searchQuery = async (req: Request, res: Response) => {
       content_highlight: hit.highlight?.content?.[0] || null, // If highlighted content exists
     }));
 
-    // Step 4: Generate AI response based on query results
-    let aiResponse;
-    if (queriesWithAnswers.some((q) => q.answers.length > 0)) {
-      aiResponse = await generateAIResponse(search as string, queriesWithAnswers);
-    } else {
-      aiResponse = "Not enough data for a detailed response. Please refine your search.";
-    }
-
-    // Step 5: Return the response with both query results and codebase results
     res.status(200).json({
-      results: {
-        queries: queriesWithAnswers,
-        codebase: codebaseHits,
-      },
-      aiSuggestion: aiResponse,
+      results: codebaseHits,
     });
   } catch (error) {
-    console.error("Error performing search:", error);
-    res.status(500).json({ error: "Error performing search" });
+    console.error("Error performing GitHub search:", error);
+    res.status(500).json({ error: "Error performing GitHub search" });
   }
 };
+
 
 // GET /queries - Get all queries (feed)
 export const getFeed = async (req: Request, res: Response) => {
