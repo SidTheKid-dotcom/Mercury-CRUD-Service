@@ -6,7 +6,16 @@ const GITHUB_API_URL = 'https://api.github.com/repos/';
 // Function to fetch the repository description and basic details
 export const fetchRepoDetails = async (owner: string, repo: string) => {
   try {
-    const response = await axios.get(`${GITHUB_API_URL}${owner}/${repo}`);
+
+    const token = process.env.GITHUB_TOKEN;
+
+    const response = await axios.get(`${GITHUB_API_URL}${owner}/${repo}`, {
+      headers: {
+        Authorization: `Bearer ${token}`, // Replace `token` with your actual GitHub Personal Access Token
+        'User-Agent': 'MyApp-Mercury', // Replace with your app's name
+      },
+    });
+
     return {
       description: response.data.description || 'No description provided.',
     };
@@ -19,7 +28,15 @@ export const fetchRepoDetails = async (owner: string, repo: string) => {
 // Function to fetch and simplify the repository structure recursively
 export const fetchCoreStructure = async (owner: string, repo: string, path = '') => {
   try {
-    const response = await axios.get(`${GITHUB_API_URL}${owner}/${repo}/contents/${path}`);
+
+    const token = process.env.GITHUB_TOKEN;
+
+    const response = await axios.get(`${GITHUB_API_URL}${owner}/${repo}/contents/${path}`, {
+      headers: {
+        Authorization: `Bearer ${token}`, // Replace `token` with your actual GitHub Personal Access Token
+        'User-Agent': 'MyApp-Mercury', // Replace with your app's name
+      },
+    });
     const structure = await Promise.all(response.data.map(async (item: any) => {
       if (item.type === 'dir') {
         // For directories, recursively fetch nested contents
@@ -49,21 +66,8 @@ export const indexRepo = async function (repoUrl: string) {
     repo_url: repoUrl,
   };
 
-  const token = process.env.GITHUB_TOKEN;
-
   try {
-    const response = await axios.post(
-      url,
-      {}, // Empty object for the request body (if no body is needed)
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "User-Agent": "MyAppName/1.0.0",
-        },
-        params, // Query parameters
-      }
-    );
-
+    const response = await axios.post(url, null, { params });
     console.log('Response:', response.data);
   } catch (error) {
     console.error('Error indexing repo:', error);
