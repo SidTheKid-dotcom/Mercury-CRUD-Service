@@ -58,6 +58,7 @@ export const indexRepo = async function (repoUrl: string) {
       {
         headers: {
           Authorization: `Bearer ${token}`,
+          "User-Agent": "MyAppName/1.0.0",
         },
         params, // Query parameters
       }
