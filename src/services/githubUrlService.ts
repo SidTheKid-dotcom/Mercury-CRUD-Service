@@ -42,15 +42,27 @@ export const fetchCoreStructure = async (owner: string, repo: string, path = '')
     throw error;
   }
 };
-export const indexRepo = async function(repoUrl: string) {
+export const indexRepo = async function (repoUrl: string) {
   const url = 'http://13.127.171.237:8000/index_repo';
-  
+
   const params = {
     repo_url: repoUrl,
   };
 
+  const token = process.env.GITHUB_TOKEN;
+
   try {
-    const response = await axios.post(url, null, { params });
+    const response = await axios.post(
+      url,
+      {}, // Empty object for the request body (if no body is needed)
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        params, // Query parameters
+      }
+    );
+
     console.log('Response:', response.data);
   } catch (error) {
     console.error('Error indexing repo:', error);

@@ -59,6 +59,7 @@ jobs:
             -e AWS_REGION="${{ secrets.AWS_REGION }}" \
             -e AWS_BUCKET_NAME="${{ secrets.AWS_BUCKET_NAME }}" \
             -e CLOUDFRONT_URL="${{ secrets.CLOUDFRONT_URL }}" \
+            -e GITHUB_TOKEN="${{ secrets.TOKEN_GITHUB }}" \
             --name crud-service-container sidvish/crud-service:latest
 
           # Optional: Clean up unused images
