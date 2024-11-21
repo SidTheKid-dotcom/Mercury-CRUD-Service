@@ -3,6 +3,7 @@ import fs from "fs-extra";
 import path from "path";
 import AdmZip from "adm-zip";
 import prisma from "../prisma";
+import axios from "axios";
 import { uploadToS3, storeFileLinkInDb } from "../services/s3Service";
 import { fetchCoreStructure, fetchRepoDetails } from "../services/githubUrlService";
 import { indexCodebase } from "../services/folderTraverse"; // Import the indexCodebase function
@@ -72,6 +73,11 @@ export const uploadFile = async (req: Request, res: Response) => {
 
     // Store file URL in PostgreSQL using Prisma
     const file = await storeFileLinkInDb(originalname, fileUrl);
+
+    // Send the file URL to the backend
+    await axios.post('http://13.127.171.237:8000/process-file', {
+      file_url: file.fileUrl, // This will be sent in the request body
+    });
 
     // Return the URL of the uploaded file as a response
     res.status(200).json({
