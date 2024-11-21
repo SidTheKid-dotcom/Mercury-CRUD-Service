@@ -30,6 +30,7 @@ export const uploadToS3 = async (fileBuffer: any, fileName: any, bucketName: any
 export const storeFileLinkInDb = async (fileName: any, fileUrl: any) => {
 
   const url = process.env.CLOUDFRONT_URL;
+  console.log(url);
 
   try {
     const file = await prisma.file.create({
