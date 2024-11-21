@@ -58,6 +58,7 @@ jobs:
             -e AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
             -e AWS_REGION="${{ secrets.AWS_REGION }}" \
             -e AWS_BUCKET_NAME="${{ secrets.AWS_BUCKET_NAME }}" \
+            -e CLOUDFRONT_URL="${{ secrets.CLOUDFRONT_URL }}" \
             --name crud-service-container sidvish/crud-service:latest
 
           # Optional: Clean up unused images
