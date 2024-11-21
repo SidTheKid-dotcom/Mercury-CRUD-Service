@@ -30,7 +30,6 @@ export const uploadToS3 = async (fileBuffer: any, fileName: any, bucketName: any
 export const storeFileLinkInDb = async (fileName: any, fileUrl: any) => {
 
   const url = process.env.CLOUDFRONT_URL;
-  console.log(url);
 
   try {
     const file = await prisma.file.create({
@@ -39,7 +38,7 @@ export const storeFileLinkInDb = async (fileName: any, fileUrl: any) => {
         fileUrl: `${url}/${fileName}`, // CloudFront URL/fileName,
       },
     });
-    console.log('File link stored in DB with ID:', file.id);
+    console.log('File link stored in DB with ID:', file.id, file.fileUrl);
     return file;
   } catch (err) {
     console.error('Error storing file link in DB:', err);
