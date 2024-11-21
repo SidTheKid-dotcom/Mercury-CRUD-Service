@@ -1,6 +1,6 @@
 import express from "express";
 import multer from "multer";
-import { uploadFolder, uploadFile, uploadGithubUrl } from "../controllers/uploadController";
+import { uploadFolder, uploadFile, uploadGithubUrl, getAllFiles, getAllGithubRepos } from "../controllers/uploadController";
 
 const router = express.Router();
 const uploadFolderMulter = multer({ dest: "uploads/" }); // Temporary folder for uploads
@@ -22,5 +22,11 @@ router.post('/file', uploadFileMulter.single('file'), uploadFile);
 
 // Route to handle github url uploads
 router.post('/github', uploadGithubUrl);
+
+// Route to get all uploaded files
+router.get('/files', getAllFiles);
+
+// Route to get all uplaoded github repos with json structure
+router.get('/github', getAllGithubRepos);
 
 export default router;

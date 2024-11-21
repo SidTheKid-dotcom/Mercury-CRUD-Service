@@ -123,3 +123,23 @@ export const uploadGithubUrl = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Error storing repository structure', error: error });
   }
 };
+
+// Controller function to get all uploaded files
+export const getAllFiles = async (req: Request, res: Response) => {
+  try {
+    const files = await prisma.file.findMany();
+    res.status(200).json(files);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching files', error: error });
+  }
+}
+
+// Controller fucnction to get all uploaded github repos
+export const getAllGithubRepos = async (req: Request, res: Response) => {
+  try {
+    const repos = await prisma.repositoryStructure.findMany();
+    res.status(200).json(repos);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching github repos', error: error });
+  }
+}
