@@ -5,7 +5,7 @@ import AdmZip from "adm-zip";
 import prisma from "../prisma";
 import axios from "axios";
 import { uploadToS3, storeFileLinkInDb } from "../services/s3Service";
-import { fetchCoreStructure, fetchRepoDetails } from "../services/githubUrlService";
+import { fetchCoreStructure, fetchRepoDetails, indexRepo } from "../services/githubUrlService";
 import { indexCodebase } from "../services/folderTraverse"; // Import the indexCodebase function
 
 /**
@@ -120,6 +120,10 @@ export const uploadGithubUrl = async (req: Request, res: Response) => {
         structure: fileStructure,
       },
     });
+
+    console.log('Repository structure stored successfully');
+
+    await indexRepo(repoUrl);
 
     res.status(200).json({
       message: 'Repository structure stored successfully',
