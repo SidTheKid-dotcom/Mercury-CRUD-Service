@@ -14,6 +14,8 @@ router.post('/queries/:id/vote', queryController_1.voteQuery);
 router.post('/queries/:id/reportSpam', queryController_1.reportSpam);
 // Route for search functionality
 router.get('/search', queryController_1.searchQuery);
+// For searching codebase files
+router.get('/search/github', queryController_1.searchGitHub);
 // Route to get feed, optionally filtered by tag
 router.get("/queries", queryController_1.getFeed);
 exports.default = router;

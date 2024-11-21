@@ -92,6 +92,13 @@ model Department {
   users User[]
 }
 
+model File {
+  id        Int      @id @default(autoincrement())
+  fileName  String
+  fileUrl   String
+  createdAt DateTime @default(now())
+}
+
 enum Designation {
   employee
   manager

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import userRoutes from './userRoutes'; // Import user-related routes
 import queryRoutes from './queryRoutes'; // Import query-related routes
-import folderRoutes from './folderRoute';
+import folderRoutes from './uploadRoute';
 import analyticsRoutes from './analyticsRoute';
 
 const router: Router = Router();

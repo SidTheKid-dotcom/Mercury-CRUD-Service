@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getFeed = exports.searchQuery = exports.reportSpam = exports.voteQuery = exports.answerQuery = exports.postQuery = void 0;
+exports.getFeed = exports.searchGitHub = exports.searchQuery = exports.reportSpam = exports.voteQuery = exports.answerQuery = exports.postQuery = void 0;
 const prisma_1 = __importDefault(require("../prisma"));
 const elasticSearch_1 = __importDefault(require("../services/elasticSearch")); // Your ElasticSearch client
 const rabbitmq_1 = require("../services/rabbitmq");
@@ -55,20 +55,37 @@ const postQuery = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         };
         yield (0, rabbitmq_1.publishEvent)(event);
         // Update QueryAnalytics
-        const analytics = yield prisma_1.default.queryAnalytics.findFirst();
-        if (analytics) {
-            const updatedTagCounts = Object.assign({}, analytics.tagCounts);
-            query.tags.forEach(tag => {
-                updatedTagCounts[tag.name] = (updatedTagCounts[tag.name] || 0) + 1;
-            });
-            yield prisma_1.default.queryAnalytics.update({
-                where: { id: analytics.id },
-                data: {
-                    totalQuestions: { increment: 1 },
-                    tagCounts: updatedTagCounts,
+        const dateKey = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+        const today = new Date(dateKey);
+        yield Promise.all(query.tags.map((tag) => __awaiter(void 0, void 0, void 0, function* () {
+            // Upsert QueryAnalytics for the tag
+            const queryAnalytics = yield prisma_1.default.queryAnalytics.upsert({
+                where: { tagName: tag.name },
+                update: { queryCount: { increment: 1 } },
+                create: {
+                    tagName: tag.name,
+                    queryCount: 1, // Initial query count for a new tag
                 },
             });
-        }
+            // Ensure the `queryAnalytics.id` is correctly used in DailyData
+            yield prisma_1.default.dailyData.upsert({
+                where: {
+                    date_queryAnalyticsId: {
+                        date: today, // Ensure `today` is formatted as YYYY-MM-DD
+                        queryAnalyticsId: queryAnalytics.id,
+                    },
+                },
+                update: {
+                    queries: { increment: 1 }, // Increment query count for today
+                },
+                create: {
+                    date: today,
+                    queries: 1, // Initial query count for the new date
+                    answers: 0, // Initialize answers count
+                    queryAnalyticsId: queryAnalytics.id,
+                },
+            });
+        })));
         res.status(201).json(query);
     }
     catch (error) {
@@ -94,6 +111,7 @@ const answerQuery = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
             data: {
                 answersCount: { increment: 1 },
             },
+            include: { tags: true }, // Include tags for analytics
         });
         // Update Elasticsearch index to reflect new answersCount and priority
         yield elasticSearch_1.default.update({
@@ -117,15 +135,30 @@ const answerQuery = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         };
         yield (0, rabbitmq_1.publishEvent)(event);
         // Update QueryAnalytics
-        const analytics = yield prisma_1.default.queryAnalytics.findFirst();
-        if (analytics) {
-            yield prisma_1.default.queryAnalytics.update({
-                where: { id: analytics.id },
-                data: {
-                    totalAnswers: { increment: 1 },
+        const dateKey = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+        const today = new Date(dateKey);
+        yield Promise.all(query.tags.map((tag) => __awaiter(void 0, void 0, void 0, function* () {
+            const queryAnalytics = yield prisma_1.default.queryAnalytics.upsert({
+                where: { tagName: tag.name },
+                update: { answerCount: { increment: 1 } },
+                create: { tagName: tag.name },
+            });
+            yield prisma_1.default.dailyData.upsert({
+                where: {
+                    date_queryAnalyticsId: {
+                        date: today,
+                        queryAnalyticsId: queryAnalytics.id,
+                    },
+                },
+                update: { answers: { increment: 1 } },
+                create: {
+                    date: today,
+                    queries: 0,
+                    answers: 1,
+                    queryAnalyticsId: queryAnalytics.id,
                 },
             });
-        }
+        })));
         res.status(201).json(answer);
     }
     catch (error) {
@@ -275,7 +308,37 @@ const searchQuery = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
                     creatorName: answer.answerCreator.email,
                 })) });
         })));
-        // Step 3: Search Elasticsearch for codebase files (project files)
+        // Step 4: Generate AI response based on query results
+        let aiResponse;
+        if (queriesWithAnswers.some((q) => q.answers.length > 0)) {
+            aiResponse = yield (0, aiService_1.generateAIResponse)(search, queriesWithAnswers);
+        }
+        else {
+            aiResponse = "Not enough data for a detailed response. Please refine your search.";
+        }
+        // Step 5: Return the response with both query results and codebase results
+        res.status(200).json({
+            results: {
+                queries: queriesWithAnswers,
+            },
+            aiSuggestion: aiResponse,
+        });
+    }
+    catch (error) {
+        console.error("Error performing search:", error);
+        res.status(500).json({ error: "Error performing search" });
+    }
+});
+exports.searchQuery = searchQuery;
+const searchGitHub = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { search } = req.query;
+    const K = 3; // Number of top results to return
+    try {
+        if (!search) {
+            res.status(400).json({ error: "Search term is required" });
+            return;
+        }
+        // Search Elasticsearch for codebase files (project files)
         const esCodebaseResult = yield elasticSearch_1.default.search({
             index: 'codebase-index',
             query: {
@@ -297,29 +360,16 @@ const searchQuery = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
                 content_highlight: ((_b = (_a = hit.highlight) === null || _a === void 0 ? void 0 : _a.content) === null || _b === void 0 ? void 0 : _b[0]) || null, // If highlighted content exists
             });
         });
-        // Step 4: Generate AI response based on query results
-        let aiResponse;
-        if (queriesWithAnswers.some((q) => q.answers.length > 0)) {
-            aiResponse = yield (0, aiService_1.generateAIResponse)(search, queriesWithAnswers);
-        }
-        else {
-            aiResponse = "Not enough data for a detailed response. Please refine your search.";
-        }
-        // Step 5: Return the response with both query results and codebase results
         res.status(200).json({
-            results: {
-                queries: queriesWithAnswers,
-                codebase: codebaseHits,
-            },
-            aiSuggestion: aiResponse,
+            results: codebaseHits,
         });
     }
     catch (error) {
-        console.error("Error performing search:", error);
-        res.status(500).json({ error: "Error performing search" });
+        console.error("Error performing GitHub search:", error);
+        res.status(500).json({ error: "Error performing GitHub search" });
     }
 });
-exports.searchQuery = searchQuery;
+exports.searchGitHub = searchGitHub;
 // GET /queries - Get all queries (feed)
 const getFeed = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { tag } = req.query; // Optional tag filter
