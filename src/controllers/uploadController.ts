@@ -3,7 +3,8 @@ import fs from "fs-extra";
 import path from "path";
 import AdmZip from "adm-zip";
 import prisma from "../prisma";
-import s3 from "../services/s3Service";
+import { uploadToS3, storeFileLinkInDb } from "../services/s3Service";
+import { fetchRecursiveStructure } from "../services/githubUrlService";
 import { indexCodebase } from "../services/folderTraverse"; // Import the indexCodebase function
 
 /**
@@ -55,41 +56,6 @@ export const uploadFolder = async (req: Request, res: Response) => {
   }
 };
 
-// Upload file to S3
-const uploadToS3 = async (fileBuffer: any, fileName: any, bucketName: any) => {
-  const params = {
-    Bucket: bucketName,
-    Key: fileName, // The file will be stored with this name
-    Body: fileBuffer, // The buffer from multer
-    ContentType: 'application/octet-stream',
-  };
-
-  try {
-    const uploadResult = await s3.upload(params).promise();
-    console.log('File uploaded successfully:', uploadResult.Location);
-    return uploadResult.Location; // Return the URL of the uploaded file
-  } catch (err) {
-    console.error('Error uploading file:', err);
-    throw err;
-  }
-};
-
-const storeFileLinkInDb = async (fileName: any, fileUrl: any) => {
-  try {
-    const file = await prisma.file.create({
-      data: {
-        fileName,
-        fileUrl,
-      },
-    });
-    console.log('File link stored in DB with ID:', file.id);
-    return file;
-  } catch (err) {
-    console.error('Error storing file link in DB:', err);
-    throw err;
-  }
-};
-
 // Controller function to handle file upload
 export const uploadFile = async (req: Request, res: Response) => {
   if (!req.file) {
@@ -114,5 +80,42 @@ export const uploadFile = async (req: Request, res: Response) => {
     });
   } catch (err) {
     res.status(500).send('Error uploading file');
+  }
+};
+
+export const uploadGithubUrl = async (req: Request, res: Response) => {
+  const { repoUrl } = req.body; // URL of the GitHub repository
+
+  try {
+    // Extract owner and repo name from the URL
+    const regex = /https:\/\/github\.com\/([^\/]+)\/([^\/]+)/;
+    const match = repoUrl.match(regex);
+    if (!match) {
+      res.status(400).json({ message: 'Invalid GitHub URL' });
+      return;
+    }
+
+    const owner = match[1];
+    const repoName = match[2];
+
+    // Fetch the repository structure
+    const fileStructure = await fetchRecursiveStructure(owner, repoName);
+
+    // Save the repository structure in the database
+    const result = await prisma.repositoryStructure.create({
+      data: {
+        repoUrl,
+        owner,
+        repoName,
+        structure: fileStructure,
+      },
+    });
+
+    res.status(200).json({
+      message: 'Repository structure stored successfully',
+      data: result,
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error storing repository structure', error });
   }
 };

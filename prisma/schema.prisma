@@ -99,6 +99,15 @@ model File {
   createdAt DateTime @default(now())
 }
 
+model RepositoryStructure {
+  id         Int      @id @default(autoincrement())
+  repoUrl    String   // Stores the GitHub URL
+  owner      String   // Owner of the repository
+  repoName   String   // Name of the repository
+  structure  Json     // The JSON file structure
+  createdAt  DateTime @default(now())
+}
+
 enum Designation {
   employee
   manager
