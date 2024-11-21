@@ -100,12 +100,13 @@ model File {
 }
 
 model RepositoryStructure {
-  id         Int      @id @default(autoincrement())
-  repoUrl    String   // Stores the GitHub URL
-  owner      String   // Owner of the repository
-  repoName   String   // Name of the repository
-  structure  Json     // The JSON file structure
-  createdAt  DateTime @default(now())
+  id          Int      @id @default(autoincrement())
+  repoUrl     String // Stores the GitHub URL
+  owner       String // Owner of the repository
+  repoName    String // Name of the repository
+  description String // Description of the repository
+  structure   Json // The JSON file structure
+  createdAt   DateTime @default(now())
 }
 
 enum Designation {

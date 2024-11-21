@@ -4,7 +4,7 @@ import path from "path";
 import AdmZip from "adm-zip";
 import prisma from "../prisma";
 import { uploadToS3, storeFileLinkInDb } from "../services/s3Service";
-import { fetchRecursiveStructure } from "../services/githubUrlService";
+import { fetchCoreStructure, fetchRepoDetails } from "../services/githubUrlService";
 import { indexCodebase } from "../services/folderTraverse"; // Import the indexCodebase function
 
 /**
@@ -84,10 +84,10 @@ export const uploadFile = async (req: Request, res: Response) => {
 };
 
 export const uploadGithubUrl = async (req: Request, res: Response) => {
-  const { repoUrl } = req.body; // URL of the GitHub repository
+  const { repoUrl } = req.body; // GitHub URL provided by the user
 
   try {
-    // Extract owner and repo name from the URL
+    // Validate and parse the URL to extract owner and repository name
     const regex = /https:\/\/github\.com\/([^\/]+)\/([^\/]+)/;
     const match = repoUrl.match(regex);
     if (!match) {
@@ -98,15 +98,19 @@ export const uploadGithubUrl = async (req: Request, res: Response) => {
     const owner = match[1];
     const repoName = match[2];
 
-    // Fetch the repository structure
-    const fileStructure = await fetchRecursiveStructure(owner, repoName);
+    // Fetch repository details (description)
+    const { description } = await fetchRepoDetails(owner, repoName);
 
-    // Save the repository structure in the database
+    // Fetch the core file structure
+    const fileStructure = await fetchCoreStructure(owner, repoName);
+
+    // Save the repository details and structure in the database
     const result = await prisma.repositoryStructure.create({
       data: {
         repoUrl,
         owner,
         repoName,
+        description,
         structure: fileStructure,
       },
     });
@@ -116,6 +120,6 @@ export const uploadGithubUrl = async (req: Request, res: Response) => {
       data: result,
     });
   } catch (error) {
-    res.status(500).json({ message: 'Error storing repository structure', error });
+    res.status(500).json({ message: 'Error storing repository structure', error: error });
   }
 };
