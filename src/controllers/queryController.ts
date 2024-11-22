@@ -226,6 +226,66 @@ export const voteQuery = async (req: Request, res: Response) => {
   }
 };
 
+export const voteAnswer = async (req: Request, res: Response) => {
+  const { answerId } = req.params;
+  const { userId, type, queryId } = req.body; // type: 'UPVOTE' or 'DOWNVOTE'
+
+  try {
+    // Ensure user can only vote once per query
+    const existingVote = await prisma.answerVote.findFirst({
+      where: {
+        answerId: parseInt(answerId),
+        userId,
+      },
+    });
+
+    if (existingVote) {
+      res.status(400).json({ error: "You have already voted on this answer" });
+      return;
+    }
+
+    const vote = await prisma.answerVote.create({
+      data: {
+        answerId: parseInt(answerId),
+        userId,
+        type,
+      },
+    });
+
+    // Update query vote counts
+    const query = await prisma.answer.update({
+      where: { id: parseInt(answerId) },
+      data: {
+        upvotesCount: { increment: type === 'UPVOTE' ? 1 : 0 },
+        downvotesCount: { increment: type === 'DOWNVOTE' ? 1 : 0 },
+      },
+    });
+
+    // Update Elasticsearch index
+    await client.update({
+      index: 'queries',
+      id: queryId.toString(),
+      script: {
+        source: `
+          if (ctx._source.priority == null) {
+            ctx._source.priority = params.increment;
+          } else {
+            ctx._source.priority += params.increment;
+          }
+        `,
+        params: {
+          increment: 2,
+        },
+      },
+    });
+
+    res.status(201).json({ vote, query });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error voting on query" });
+  }
+};
+
 export const reportSpam = async (req: Request, res: Response) => {
   const { id } = req.params;
   const { userId }: { userId: number } = req.body;

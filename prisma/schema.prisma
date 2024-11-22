@@ -14,15 +14,16 @@ datasource db {
 }
 
 model User {
-  id             Int         @id @default(autoincrement())
-  email          String      @unique
+  id             Int          @id @default(autoincrement())
+  email          String       @unique
   designation    Designation
-  department     Department  @relation(fields: [departmentId], references: [id])
+  department     Department   @relation(fields: [departmentId], references: [id])
   departmentId   Int
-  spamReports    Query[]     @relation("SpamReports")
+  spamReports    Query[]      @relation("SpamReports")
   votes          QueryVote[] // Reverse relation for upvotes/downvotes
   createdQueries Query[] // Queries created by this user
   answers        Answer[] // Answers posted by this user
+  AnswerVote     AnswerVote[]
 }
 
 model Query {
@@ -41,13 +42,16 @@ model Query {
 }
 
 model Answer {
-  id              Int      @id @default(autoincrement())
+  id              Int          @id @default(autoincrement())
   content         String
-  createdAt       DateTime @default(now())
+  createdAt       DateTime     @default(now())
   queryId         Int
-  query           Query    @relation(fields: [queryId], references: [id])
+  query           Query        @relation(fields: [queryId], references: [id])
   answerCreatorId Int // User who created the answer
-  answerCreator   User     @relation(fields: [answerCreatorId], references: [id]) // Relation to answer creator
+  answerCreator   User         @relation(fields: [answerCreatorId], references: [id]) // Relation to answer creator
+  votes           AnswerVote[]
+  upvotesCount    Int          @default(0) // Store count of upvotes
+  downvotesCount  Int          @default(0) // Store count of downvotes
 }
 
 model Tag {
@@ -63,6 +67,15 @@ model QueryVote {
   userId  Int
   user    User     @relation(fields: [userId], references: [id])
   type    VoteType
+}
+
+model AnswerVote {
+  id       Int      @id @default(autoincrement())
+  answerId Int
+  answer   Answer   @relation(fields: [answerId], references: [id])
+  userId   Int
+  user     User     @relation(fields: [userId], references: [id])
+  type     VoteType
 }
 
 model QueryAnalytics {
