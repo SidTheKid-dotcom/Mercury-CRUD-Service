@@ -52,6 +52,7 @@ model Answer {
   votes           AnswerVote[]
   upvotesCount    Int          @default(0) // Store count of upvotes
   downvotesCount  Int          @default(0) // Store count of downvotes
+  isOfficial      Boolean      @default(false) // Store official flag
 }
 
 model Tag {

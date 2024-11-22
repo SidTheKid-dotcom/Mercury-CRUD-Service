@@ -95,11 +95,27 @@ export const answerQuery = async (req: Request, res: Response) => {
   const { content, answerCreatorId }: AnswerQueryInput = req.body;
 
   try {
+
+    // Fetch the designation of the answer creator
+    const user = await prisma.user.findUnique({
+      where: { id: answerCreatorId },
+      select: { designation: true },
+    });
+
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    // Determine if the answer should be marked as official
+    const isOfficial = ["manager", "HOD"].includes(user.designation);
+
     const answer = await prisma.answer.create({
       data: {
         content,
         queryId: parseInt(id),
         answerCreatorId,
+        isOfficial, // Set the isOfficial flag
       },
     });
 
@@ -131,6 +147,7 @@ export const answerQuery = async (req: Request, res: Response) => {
         queryId: answer.queryId,
         answerCreatorId: answer.answerCreatorId,
         createdAt: answer.createdAt,
+        isOfficial: answer.isOfficial,
       },
     };
     await publishEvent(event);
@@ -172,6 +189,54 @@ export const answerQuery = async (req: Request, res: Response) => {
     res.status(500).json({ error: "Error answering query" });
   }
 };
+
+export const markAnswerAsOfficial = async (req: Request, res: Response) => {
+  const { answerId } = req.params;
+  const { userId } = req.body; // ID of the user attempting to mark the answer as official
+
+  try {
+    // Fetch the user's designation
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { designation: true },
+    });
+
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    // Check if the user is authorized to mark an answer as official
+    if (!["manager", "HOD"].includes(user.designation)) {
+      res.status(403).json({ error: "You are not authorized to mark this answer as official" });
+      return;
+    }
+
+    // Update the answer to mark it as official
+    const updatedAnswer = await prisma.answer.update({
+      where: { id: parseInt(answerId) },
+      data: { isOfficial: true },
+    });
+
+    // Optionally, you can publish an event for this update (e.g., for analytics or notifications)
+    const event = {
+      eventType: "AnswerMarkedAsOfficial",
+      data: {
+        answerId: updatedAnswer.id,
+        queryId: updatedAnswer.queryId,
+        markedBy: userId,
+        markedAt: new Date().toISOString(),
+      },
+    };
+    await publishEvent(event);
+
+    res.status(200).json({ message: "Answer marked as official", answer: updatedAnswer });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error marking answer as official" });
+  }
+};
+
 
 export const voteQuery = async (req: Request, res: Response) => {
   const { id } = req.params;
