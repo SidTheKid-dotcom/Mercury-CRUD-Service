@@ -1,12 +1,16 @@
 // src/app.ts
 import express from "express";
 import routes from './routes/routes';
+import cors from "cors";
 import { connectToRabbitMQ } from "./services/rabbitmq";
 
 const app = express();
 
 // Middleware
 app.use(express.json());
+
+// Enable CORS
+app.use(cors()); // Add this line to enable CORS for all routes
 
 // Rest Endpoint
 app.get("/", (req: any, res: any) => {
