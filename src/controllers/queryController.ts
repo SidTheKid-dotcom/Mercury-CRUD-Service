@@ -516,31 +516,3 @@ export const searchGitHub = async (req: Request, res: Response) => {
     res.status(500).json({ error: "Error performing GitHub search" });
   }
 };
-
-
-// GET /queries - Get all queries (feed)
-export const getFeed = async (req: Request, res: Response) => {
-  const { tag } = req.query; // Optional tag filter
-  console.log(tag);
-  try {
-    const queries = await prisma.query.findMany({
-      where: tag
-        ? {
-          tags: {
-            some: { name: tag as string },
-          },
-        }
-        : undefined,
-      include: {
-        answers: true,
-        tags: true,
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
-    res.status(200).json(queries);
-  } catch (error) {
-    res.status(500).json({ error: "Error retrieving feed" });
-  }
-};
