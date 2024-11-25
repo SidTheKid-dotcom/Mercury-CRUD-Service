@@ -15,13 +15,13 @@ Welcome to **Mercury AIQuest**, a multi-service application built to demonstrate
 The project is organized into the following repositories:
 
 ### 1. [Frontend: Mercury_AIQuest](https://github.com/DarkHeart01/Mercury_AIQuest)
-The main user interface for Mercury AIQuest. Built with React, this frontend enables users to interact with the AI-driven functionalities seamlessly.
+The main user interface for Mercury AIQuest. Built with React, this frontend enables users to interact with the backend and AI-driven functionalities seamlessly.
 
 ### 2. [Backend: Mercury-CRUD-Service](https://github.com/SidTheKid-dotcom/Mercury-CRUD-Service)
 Handles all the core CRUD operations for the application, serving as the backbone for database interactions.
 
 ### 3. [Backend: Mercury-Email-Service](https://github.com/SidTheKid-dotcom/Mercury-Email-Service)
-A microservice dedicated to email-based functionalities such as notifications, verifications, and updates.
+A microservice dedicated to email-based functionalities such as notifications and updates.
 
 ---
 
