@@ -516,3 +516,54 @@ export const searchGitHub = async (req: Request, res: Response) => {
     res.status(500).json({ error: "Error performing GitHub search" });
   }
 };
+
+// Get a single query by ID
+export const getQueryById = async (req: Request, res: Response) => {
+  const { id } = req.params; // Get query ID from the request parameters
+
+  try {
+    // Fetch the query with all related details
+    const query = await prisma.query.findUnique({
+      where: { id: parseInt(id, 10) },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            email: true,
+            designation: true,
+            department: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+        tags: true,
+        votes: true,
+        answers: {
+          include: {
+            answerCreator: {
+              select: {
+                id: true,
+                email: true,
+                designation: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    // If the query does not exist, return an error
+    if (!query) {
+      res.status(404).json({ error: "Query not found" });
+      return;
+    }
+
+    // Return the query data
+    res.status(200).json(query);
+  } catch (error) {
+    console.error("Error fetching query by ID:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};

@@ -1,6 +1,6 @@
 // src/routes/queryRoutes.ts
 import express from "express";
-import { postQuery, answerQuery, voteQuery, voteAnswer, markAnswerAsOfficial, reportSpam, searchQuery, searchGitHub } from "../controllers/queryController";
+import { postQuery, answerQuery, voteQuery, voteAnswer, markAnswerAsOfficial, reportSpam, searchQuery, searchGitHub, getQueryById } from "../controllers/queryController";
 
 const router = express.Router();
 
@@ -16,6 +16,8 @@ router.post('/answers/:answerId/vote', voteAnswer);
 router.post('/answers/:answerId/markOfficial', markAnswerAsOfficial);
 
 router.post('/queries/:id/reportSpam', reportSpam);
+
+router.get('/:id', getQueryById);    
 
 // Route for search functionality
 router.get('/search', searchQuery);
