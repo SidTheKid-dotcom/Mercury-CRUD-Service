@@ -6,7 +6,7 @@ Welcome to **Mercury AIQuest**, a multi-service application built to demonstrate
 
 [![Watch the Video](https://img.youtube.com/vi/l1pXpls1Vro/0.jpg)](https://www.youtube.com/watch?v=l1pXpls1Vro)
 ---
-*Click on the thumbnail above to watch the short introduction video about Mercury AIQuest.*
+*🚀 Check out the project showcase video: https://www.youtube.com/watch?v=l1pXpls1Vro*
 
 ---
 
@@ -25,12 +25,27 @@ A microservice dedicated to email-based functionalities such as notifications, v
 
 ---
 
-## 🚀 Getting Started
+# Mercury CRUD Service
 
-Each repository includes detailed instructions on how to clone, set up, and run the respective services. To get started:
+A scalable and modular backend service designed for efficient Create, Read, Update, and Delete (CRUD) operations. This project leverages modern web technologies to offer RESTful APIs for streamlined data management, optimized for high performance and maintainability.
 
-1. Clone each repository locally:
-   ```bash
-   git clone https://github.com/DarkHeart01/Mercury_AIQuest.git
-   git clone https://github.com/SidTheKid-dotcom/Mercury-CRUD-Service.git
-   git clone https://github.com/SidTheKid-dotcom/Mercury-Email-Service.git
+## Features
+
+- **CI/CD Pipeline**: Automates testing, deployment, and versioning for continuous delivery.
+- **Talk to Codebases & Files**: API endpoint to talking with your codebases and files
+- **ElasticSearch**: Uses ElasticSearch to manage fuzzy queries
+- **RabbitMQ Event Broker**: Uses message broker to produce events to trigger email service
+- **CRUD Operations**: Fully implemented for posting queries and answer.
+- **Voting and Spam Reports**: Supports voting mechanisms on content, enabling user engagement and prioritization.
+- **Optimized Query Controllers**: Ensures efficient database interactions with support for complex queries.
+- **CORS Support**: Enables cross-origin resource sharing for flexible frontend-backend integration.
+- **Error Handling**: Comprehensive error management for smooth user experiences.
+
+## Getting Started
+
+### Prerequisites
+
+- **Node.js**: Ensure you have Node.js installed on your system.
+- **Database**: Set up a compatible database (e.g., PostgreSQL or MySQL) for the service.
+- **Environment Variables**: Configure `.env` for database credentials and API keys.
+
