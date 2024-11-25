@@ -373,6 +373,7 @@ export const reportSpam = async (req: Request, res: Response) => {
 };
 
 export const searchQuery = async (req: Request, res: Response) => {
+  console.log('in search controller')
   const { search, tag } = req.query;
   const K = 3; // Number of top results to return
 
@@ -455,6 +456,8 @@ export const searchQuery = async (req: Request, res: Response) => {
         };
       })
     );
+
+    console.log('all good');
 
     // Step 4: Generate AI response based on query results
     let aiResponse;

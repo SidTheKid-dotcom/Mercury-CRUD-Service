@@ -17,7 +17,7 @@ router.post('/answers/:answerId/markOfficial', markAnswerAsOfficial);
 
 router.post('/queries/:id/reportSpam', reportSpam);
 
-router.get('/:id', getQueryById);    
+router.get('/query/:id', getQueryById);    
 
 // Route for search functionality
 router.get('/search', searchQuery);
