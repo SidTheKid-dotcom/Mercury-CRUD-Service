@@ -66,8 +66,6 @@ export const talkRepo = async (req: Request, res: Response) => {
             },
         };
 
-        console.log('Payload:', JSON.stringify(payload, null, 2));
-
         // Send a POST request to the external API
         const response = await axios.post(
             'http://13.127.171.237:8000/search_and_answer',

@@ -121,8 +121,6 @@ export const uploadGithubUrl = async (req: Request, res: Response) => {
       },
     });
 
-    console.log('Repository structure stored successfully');
-
     await indexRepo(repoUrl);
 
     res.status(200).json({

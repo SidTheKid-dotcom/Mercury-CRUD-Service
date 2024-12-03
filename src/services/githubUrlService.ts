@@ -68,7 +68,6 @@ export const indexRepo = async function (repoUrl: string) {
 
   try {
     const response = await axios.post(url, null, { params });
-    console.log('Response:', response.data);
   } catch (error) {
     console.error('Error indexing repo:', error);
   }

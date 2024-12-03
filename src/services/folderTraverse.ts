@@ -65,8 +65,6 @@ const processFile = async (
             timestamp: new Date().toISOString(),
         },
     });
-
-    console.log(`Indexed: ${relativePath}`);
 };
 
 /**
@@ -79,7 +77,6 @@ const indexCodebase = async (
     folderPath: string,
     githubRepoUrl: string
 ): Promise<void> => {
-    console.log(`Starting to index codebase: ${githubRepoUrl}`);
 
     // Check if the extracted folder contains a single directory
     const entries = await fs.readdir(folderPath);
@@ -95,8 +92,6 @@ const indexCodebase = async (
     }
 
     await traverseDirectory(effectiveRoot, githubRepoUrl, effectiveRoot);
-
-    console.log("Indexing complete!");
 };
 
 

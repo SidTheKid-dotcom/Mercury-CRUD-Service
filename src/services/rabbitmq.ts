@@ -28,5 +28,4 @@ export const publishEvent = async (event: Record<string, any>) => {
     const queue = "crud-service-events";
     const message = Buffer.from(JSON.stringify(event));
     channel.sendToQueue(queue, message);
-    console.log("Event published:", event);
 };

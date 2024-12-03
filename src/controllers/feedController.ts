@@ -8,7 +8,6 @@ import { generateAIResponse } from '../services/aiService';
 // GET / - Get all queries (feed)
 export const getFeed = async (req: Request, res: Response) => {
     const { tag } = req.query; // Optional tag filter
-    console.log(tag);
     try {
         const queries = await prisma.query.findMany({
             where: tag

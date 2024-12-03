@@ -19,7 +19,6 @@ export const uploadToS3 = async (fileBuffer: any, fileName: any, bucketName: any
 
   try {
     const uploadResult = await s3.upload(params).promise();
-    console.log('File uploaded successfully:', uploadResult.Location);
     return uploadResult.Location; // Return the URL of the uploaded file
   } catch (err) {
     console.error('Error uploading file:', err);
@@ -38,7 +37,6 @@ export const storeFileLinkInDb = async (fileName: any, fileUrl: any) => {
         fileUrl: `${url}/${fileName}`, // CloudFront URL/fileName,
       },
     });
-    console.log('File link stored in DB with ID:', file.id, file.fileUrl);
     return file;
   } catch (err) {
     console.error('Error storing file link in DB:', err);
