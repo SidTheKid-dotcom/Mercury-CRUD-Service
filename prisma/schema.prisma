@@ -113,6 +113,14 @@ model File {
   createdAt DateTime @default(now())
 }
 
+model CSV {
+  id                   Int      @id @default(autoincrement())
+  csvName              String
+  csvUrl               String
+  csvExternalTableName String
+  createdAt            DateTime @default(now())
+}
+
 model RepositoryStructure {
   id          Int      @id @default(autoincrement())
   repoUrl     String // Stores the GitHub URL

@@ -44,4 +44,23 @@ export const storeFileLinkInDb = async (fileName: any, fileUrl: any) => {
   }
 };
 
+export const storeCSVLinkInDb = async (csvName: string, table_name: string) => {
+
+  const url = process.env.CLOUDFRONT_URL;
+
+  try {
+    const file = await prisma.cSV.create({
+      data: {
+        csvName,
+        csvUrl: `${url}/${csvName}`,
+        csvExternalTableName: table_name
+      },
+    });
+    return file;
+  } catch (err) {
+    console.error('Error storing CSV link in DB:', err);
+    throw err;
+  }
+};
+
 export default s3;

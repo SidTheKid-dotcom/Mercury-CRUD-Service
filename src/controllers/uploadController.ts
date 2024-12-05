@@ -4,7 +4,7 @@ import path from "path";
 import AdmZip from "adm-zip";
 import prisma from "../prisma";
 import axios from "axios";
-import { uploadToS3, storeFileLinkInDb } from "../services/s3Service";
+import { uploadToS3, storeFileLinkInDb, storeCSVLinkInDb } from "../services/s3Service";
 import { fetchCoreStructure, fetchRepoDetails, indexRepo } from "../services/githubUrlService";
 import { indexCodebase } from "../services/folderTraverse"; // Import the indexCodebase function
 
@@ -85,9 +85,44 @@ export const uploadFile = async (req: Request, res: Response) => {
       fileUrl: file.fileUrl, // Return the file URL from the DB
     });
   } catch (err) {
-    res.status(500).send('Error uploading file');
+    res.status(500).send(`Error uploading file: ${err}`);
   }
 };
+
+export const uploadCSV = async (req: Request, res: Response) => {
+  if (!req.file) {
+    res.status(400).send('No file uploaded');
+    return;
+  }
+
+  const { buffer, originalname } = req.file;
+  const bucketName = process.env.AWS_BUCKET_NAME;
+
+  try {
+    // Upload file to S3
+    await uploadToS3(buffer, originalname, bucketName);
+
+    // Creating CSV Cloudfront url for upload service to access the file
+    const url = process.env.CLOUDFRONT_URL;
+    const csvUrl = `${url}/${originalname}`;
+
+    // Send the file URL to the backend
+    const response = await axios.post(`http://13.127.171.237:8000/csv-process?url=${encodeURIComponent(csvUrl)}`);
+
+    const { table_name } = response.data;
+
+    // Store file URL in PostgreSQL using Prisma
+    const csv = await storeCSVLinkInDb(originalname, table_name);
+
+    // Return the URL of the uploaded file as a response
+    res.status(200).json({
+      message: 'CSV uploaded successfully',
+      csvUrl: csv.csvUrl, // Return the csv URL from the DB
+    });
+  } catch (err) {
+    res.status(500).send(`Error uploading file, ${err}`);
+  }
+}
 
 export const uploadGithubUrl = async (req: Request, res: Response) => {
   const { repoUrl } = req.body; // GitHub URL provided by the user
@@ -149,5 +184,15 @@ export const getAllGithubRepos = async (req: Request, res: Response) => {
     res.status(200).json(repos);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching github repos', error: error });
+  }
+}
+
+// Controller fucnction to get all uploaded csv files
+export const getAllCSVs = async (req: Request, res: Response) => {
+  try {
+    const csvs = await prisma.cSV.findMany();
+    res.status(200).json(csvs);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching files', error: error });
   }
 }
