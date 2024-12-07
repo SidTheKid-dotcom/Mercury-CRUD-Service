@@ -124,6 +124,21 @@ export const uploadCSV = async (req: Request, res: Response) => {
   }
 }
 
+export const uploadWikiUrl = async (req: Request, res: Response) => {
+  const { wikiUrl } = req.body; // GitHub URL provided by the user
+
+  try {
+    const result = await axios.post(`http://13.127.171.237:8000/scrape?url=${encodeURIComponent(wikiUrl)}`);
+
+    res.status(200).json({
+      message: 'Wiki stored successfully',
+      data: result,
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error storing the wiki', error: error });
+  }
+}
+
 export const uploadGithubUrl = async (req: Request, res: Response) => {
   const { repoUrl } = req.body; // GitHub URL provided by the user
 
@@ -186,6 +201,17 @@ export const getAllGithubRepos = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Error fetching github repos', error: error });
   }
 }
+
+// Controller fucnction to get all uploaded github repos
+export const getAllWikis = async (req: Request, res: Response) => {
+  try {
+    const wikis = await prisma.wiki.findMany();
+    res.status(200).json(wikis);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching github repos', error: error });
+  }
+}
+
 
 // Controller fucnction to get all uploaded csv files
 export const getAllCSVs = async (req: Request, res: Response) => {

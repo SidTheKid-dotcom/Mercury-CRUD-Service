@@ -121,6 +121,12 @@ model CSV {
   createdAt            DateTime @default(now())
 }
 
+model Wiki {
+  id        Int      @id @default(autoincrement())
+  wikiUrl   String
+  createdAt DateTime @default(now())
+}
+
 model RepositoryStructure {
   id          Int      @id @default(autoincrement())
   repoUrl     String // Stores the GitHub URL

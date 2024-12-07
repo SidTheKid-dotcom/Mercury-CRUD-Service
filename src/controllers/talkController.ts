@@ -74,7 +74,7 @@ export const talkCSV = async (req: Request, res: Response) => {
             'http://13.127.171.237:8000/csv-query',
             null, // No body content for the POST request, just query params
             {
-                params: { 
+                params: {
                     query: `${query} ${csv.csvName}`, // Correct concatenation
                     table_name: csv.csvExternalTableName,
                 },
@@ -126,7 +126,7 @@ export const visualizeCSV = async (req: Request, res: Response) => {
             'http://13.127.171.237:8000/csv-visualize',
             null, // No body content for the POST request, just query params
             {
-                params: { 
+                params: {
                     query: `${query} ${csv.csvName}`, // Correct concatenation
                     table_name: csv.csvExternalTableName,
                 },
@@ -201,5 +201,27 @@ export const talkRepo = async (req: Request, res: Response) => {
             console.error('Unexpected Error:', error);
             res.status(500).json({ error: 'Internal Server Error' });
         }
+    }
+};
+
+export const talkWiki = async (req: Request, res: Response) => {
+    const query = req.query;
+    console.log(query);
+
+    try {
+        if (!query) {
+            res.status(400).json({ error: "Query parameter is required" });
+            return;
+        }
+
+        // Make a POST request to the external API
+        const externalResponse = await axios.post(`http://13.127.171.237:8000/wiki?query=${query}`);
+        
+        const data = externalResponse.data;
+        // Send the answer back to the client
+        res.json({ data });
+    } catch (error) {
+        console.error('Error retrieving query document:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
     }
 };

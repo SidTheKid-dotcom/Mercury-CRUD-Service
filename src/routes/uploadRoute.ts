@@ -1,6 +1,6 @@
 import express from "express";
 import multer from "multer";
-import { uploadFolder, uploadFile, uploadCSV, uploadGithubUrl, getAllFiles, getAllCSVs, getAllGithubRepos,  } from "../controllers/uploadController";
+import { uploadFolder, uploadFile, uploadCSV, uploadGithubUrl, uploadWikiUrl, getAllFiles, getAllCSVs, getAllWikis, getAllGithubRepos } from "../controllers/uploadController";
 
 const router = express.Router();
 const uploadFolderMulter = multer({ dest: "uploads/" }); // Temporary folder for uploads
@@ -26,11 +26,17 @@ router.post('/csv', uploadFileMulter.single('file'), uploadCSV);
 // Route to handle github url uploads
 router.post('/github', uploadGithubUrl);
 
+// Route to handle wiki url uploads
+router.post('/wiki', uploadWikiUrl);
+
 // Route to get all uploaded files
 router.get('/files', getAllFiles);
 
 // Route to get all csv files
 router.get('/csv', getAllCSVs);
+
+// Route to get all wiki urls
+router.get('/wiki', getAllWikis);
 
 // Route to get all uplaoded github repos with json structure
 router.get('/github', getAllGithubRepos);
