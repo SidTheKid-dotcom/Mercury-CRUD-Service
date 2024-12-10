@@ -15,7 +15,7 @@ export const postQuery = async (req: Request, res: Response) => {
 
   try {
     // Step 1: Upload Image to S3
-    const imageUrl = buffer ? await uploadToS3(buffer, originalname, bucketName) : null;
+    const imageUrl = buffer ? await uploadToS3(buffer, originalname, bucketName) : '';
 
     // Step 2: Extract Image Tags from Gemini
     const imageTags = originalname ? await extractImageTags(imageUrl.split('/').pop()) : [];
