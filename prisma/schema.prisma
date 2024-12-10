@@ -38,6 +38,7 @@ model Query {
   downvotesCount Int         @default(0) // Store count of downvotes
   answersCount   Int         @default(0) // Store count of answers
   creatorId      Int // User who created the query
+  imageUrl       String      @default("")
   creator        User        @relation(fields: [creatorId], references: [id]) // Relation to creator
 }
 

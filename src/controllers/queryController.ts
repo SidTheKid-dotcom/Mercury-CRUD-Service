@@ -4,17 +4,32 @@ import client from '../services/elasticSearch'; // Your ElasticSearch client
 import { PostQueryInput, AnswerQueryInput } from '../types/queryTypes';
 import { publishEvent } from "../services/rabbitmq";
 import { generateAIResponse } from '../services/aiService';
+import { uploadToS3 } from "../services/s3Service";
+import { extractImageTags } from "../services/aiService";
 
 export const postQuery = async (req: Request, res: Response) => {
   const { content, tags, creatorId }: PostQueryInput = req.body;
 
+  const { buffer, originalname } = req.file ? req.file : { buffer: null, originalname: null };
+  const bucketName = process.env.AWS_BUCKET_NAME;
+
   try {
+    // Step 1: Upload Image to S3
+    const imageUrl = buffer ? await uploadToS3(buffer, originalname, bucketName) : null;
+
+    // Step 2: Extract Image Tags from Gemini
+    const imageTags = originalname ? await extractImageTags(imageUrl.split('/').pop()) : [];
+
+    // Step 3: Combine the existing tags and the new image tags
+    const allTags = Array.from(new Set([...tags, ...imageTags]));
+
     const query = await prisma.query.create({
       data: {
         content,
-        creatorId, // The user who created the query
+        creatorId: parseInt(creatorId, 10), // The user who created the query
+        imageUrl,
         tags: {
-          connectOrCreate: tags.map((tag) => ({
+          connectOrCreate: allTags.map((tag) => ({
             where: { name: tag },
             create: { name: tag },
           })),
@@ -389,10 +404,18 @@ export const searchQuery = async (req: Request, res: Response) => {
         function_score: {
           query: {
             bool: {
-              must: [
+              should: [
                 {
                   match: {
                     content: {
+                      query: search as string,
+                      fuzziness: 'AUTO',
+                    },
+                  },
+                },
+                {
+                  match: {
+                    tags: {
                       query: search as string,
                       fuzziness: 'AUTO',
                     },

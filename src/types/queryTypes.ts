@@ -1,7 +1,7 @@
 // src/types/queryTypes.ts
 export interface PostQueryInput {
     content: string;
-    creatorId: number;
+    creatorId: string;
 }
 
 export interface AnswerQueryInput {
