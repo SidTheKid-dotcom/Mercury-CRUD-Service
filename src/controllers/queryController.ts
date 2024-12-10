@@ -388,13 +388,29 @@ export const reportSpam = async (req: Request, res: Response) => {
 };
 
 export const searchQuery = async (req: Request, res: Response) => {
-  const { search, tag } = req.query;
+  const { search: rawSearch, tag } = req.query;
+  let search = rawSearch as string;
   const K = 3; // Number of top results to return
 
   try {
-    if (!search) {
+    if (!search && !tag && !req.file) {
       res.status(400).json({ error: "Search term is required" });
       return;
+    }
+
+    // Optimize to only search by image if any content of the query is missing
+    if (!search && !tag) {
+
+      const { buffer, originalname } = req.file ? req.file : { buffer: null, originalname: null };
+      const bucketName = process.env.AWS_BUCKET_NAME;
+
+      // Step 1: Upload Image to S3
+      const imageUrl = buffer ? await uploadToS3(buffer, originalname, bucketName) : '';
+
+      // Step 2: Extract Image Tags from Gemini
+      const extractedTags = originalname ? await extractImageTags(imageUrl.split('/').pop()) : [];
+
+      search = extractedTags.join("");
     }
 
     // Step 1: Search Elasticsearch for relevant queries (user queries)
