@@ -46,6 +46,7 @@ export const postQuery = async (req: Request, res: Response) => {
         content: query.content,
         tags: query.tags.map(tag => tag.name),
         createdAt: query.createdAt,
+        imageUrl: query.imageUrl,
       },
     });
 
@@ -464,6 +465,7 @@ export const searchQuery = async (req: Request, res: Response) => {
     const queryHits = esQueryResult.hits.hits.map((hit: any) => ({
       queryID: parseInt(hit._id, 10),
       content: hit._source.content,
+      imageUrl: hit._source.imageUrl,
     }));
 
     // Step 2: Fetch answers for each query from Prisma
