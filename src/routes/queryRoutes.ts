@@ -30,7 +30,7 @@ router.post('/queries/:id/reportSpam', reportSpam);
 router.get('/query/:id', getQueryById);    
 
 // Route for search functionality
-router.get('/search', uploadFileMulter.single('file'), searchQuery);
+router.post('/search', uploadFileMulter.single('file'), searchQuery);
 
 // For searching codebase files
 router.get('/search/github', searchGitHub);
