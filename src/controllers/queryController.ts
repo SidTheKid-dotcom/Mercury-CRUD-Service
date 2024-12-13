@@ -27,7 +27,7 @@ export const postQuery = async (req: Request, res: Response) => {
       data: {
         content,
         creatorId: parseInt(creatorId, 10), // The user who created the query
-        imageUrl,
+        imageUrl: imageUrl ? `${process.env.CLOUDFRONT_URL}/${imageUrl.split('/').pop()}` : '',
         tags: {
           connectOrCreate: allTags.map((tag) => ({
             where: { name: tag },
