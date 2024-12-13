@@ -394,7 +394,7 @@ export const searchQuery = async (req: Request, res: Response) => {
 
   try {
     if (!search && !tag && !req.file) {
-      res.status(400).json({ error: "Search term is required" });
+      res.status(400).json({ error: "No search term, tag or file provided" });
       return;
     }
 
