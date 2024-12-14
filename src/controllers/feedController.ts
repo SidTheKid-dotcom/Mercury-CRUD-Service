@@ -61,6 +61,7 @@ export const getTrendingPosts = async (req: Request, res: Response) => {
             postId: parseInt(hit._id, 10), // Ensure postId is a number
             title: hit._source.title,
             content: hit._source.content,
+            imageUrl: hit._source.imageUrl,
             priority: hit._source.priority,
         }));
 
