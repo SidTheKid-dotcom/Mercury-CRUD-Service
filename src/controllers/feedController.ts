@@ -58,41 +58,51 @@ export const getTrendingPosts = async (req: Request, res: Response) => {
 
         // Extract the relevant data from Elasticsearch results
         const postHits = esQueryResult.hits.hits.map((hit: any) => ({
-            postId: parseInt(hit._id, 10),
+            postId: parseInt(hit._id, 10), // Ensure postId is a number
             title: hit._source.title,
             content: hit._source.content,
             priority: hit._source.priority,
         }));
 
-        const detailedPosts = await Promise.all(
-            postHits.map(async (hit: any) => {
-                const answers = await prisma.answer.findMany({
-                    where: {
-                        queryId: hit.queryID,
-                    },
+        // Step 2: Fetch all answers for the top posts in one query
+        const postIds = postHits.map((post: any) => post.postId);
+
+        const answers = await prisma.answer.findMany({
+            where: {
+                queryId: { in: postIds },
+            },
+            select: {
+                queryId: true, // To group answers by their associated post
+                content: true,
+                createdAt: true,
+                answerCreator: {
                     select: {
-                        content: true,
-                        createdAt: true,
-                        answerCreator: {
-                            select: {
-                                email: true,
-                            },
-                        },
+                        email: true,
                     },
-                });
+                },
+            },
+        });
 
-                return {
-                    ...hit,
-                    answers: answers.map((answer) => ({
-                        content: answer.content,
-                        createdAt: answer.createdAt,
-                        creatorName: answer.answerCreator.email,
-                    })),
-                };
-            })
-        );
+        // Step 3: Group answers by queryId (postId)
+        const answersByQueryId = answers.reduce((acc, answer) => {
+            if (!acc[answer.queryId]) {
+                acc[answer.queryId] = [];
+            }
+            acc[answer.queryId].push({
+                content: answer.content,
+                createdAt: answer.createdAt,
+                creatorName: answer.answerCreator.email,
+            });
+            return acc;
+        }, {} as Record<number, any[]>);
 
-        // Step 3: Return the enriched response
+        // Step 4: Combine posts with their respective answers
+        const detailedPosts = postHits.map((post: any) => ({
+            ...post,
+            answers: answersByQueryId[post.postId] || [], // Include answers or empty array if none
+        }));
+
+        // Step 5: Return the enriched response
         res.status(200).json({
             success: true,
             posts: detailedPosts,
