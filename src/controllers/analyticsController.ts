@@ -45,3 +45,52 @@ export const getAnalytics = async (req: Request, res: Response) => {
     res.status(500).json({ error: "Error fetching analytics" });
   }
 };
+
+export const getDeptAnalytics = async (req: Request, res: Response) => {
+
+  try {
+
+    const departments = await prisma.department.findMany();
+    if (!departments || departments.length === 0) {
+      res.status(404).json({ error: "Departmnet Analytics data not found" });
+      return;
+    }
+
+    const dateFilter: any = {};
+
+    const departmentNames = departments.map((dept) => dept.name);
+
+    const analytics = await prisma.queryAnalytics.findMany({
+      where: {
+        tagName: {  in: departmentNames },
+      },
+      include: {
+        dailyData: {
+          where: dateFilter,
+        },
+      },
+    });
+
+    if (!analytics || analytics.length === 0) {
+      res.status(404).json({ error: "Analytics data not found" });
+      return;
+    }
+
+    // Format response to include overall stats and daily breakdown
+    const formattedResponse = analytics.map((item) => ({
+      tagName: item.tagName,
+      queryCount: item.queryCount,
+      answerCount: item.answerCount,
+      dailyData: item.dailyData.map((data) => ({
+        date: data.date.toISOString().split("T")[0],
+        queries: data.queries,
+        answers: data.answers,
+      })),
+    }));
+
+    res.status(200).json(formattedResponse);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error fetching analytics" });
+  }
+};
