@@ -12,7 +12,7 @@ export const fetchRepoDetails = async (owner: string, repo: string) => {
     const response = await axios.get(`${GITHUB_API_URL}${owner}/${repo}`, {
       headers: {
         Authorization: `Bearer ${token}`, // Replace `token` with your actual GitHub Personal Access Token
-        'User-Agent': 'SidTheKid-dotcom', // Replace with your app's name
+        'User-Agent': 'nilaytayade', // Replace with your app's name
       },
     });
 
