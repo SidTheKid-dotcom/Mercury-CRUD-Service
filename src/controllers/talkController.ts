@@ -23,7 +23,7 @@ export const talkDocs = async (req: Request, res: Response) => {
 
         // Make a POST request to the external API
         const externalResponse = await axios.post(
-            'http://13.127.171.237:8000/query-document',
+            'http://65.0.85.219:8000/query-document',
             null, // No body content for the POST request, just query params in the URL
             {
                 params: { query: `${query}+' '+ ${file.fileName}` }
@@ -71,7 +71,7 @@ export const talkCSV = async (req: Request, res: Response) => {
 
         // Make a POST request to the external API
         const externalResponse = await axios.post(
-            'http://13.127.171.237:8000/csv-query',
+            'http://65.0.85.219:8000/csv-query',
             null, // No body content for the POST request, just query params
             {
                 params: {
@@ -123,7 +123,7 @@ export const visualizeCSV = async (req: Request, res: Response) => {
 
         // Make a POST request to the external API
         const externalResponse = await axios.post(
-            'http://13.127.171.237:8000/csv-visualize',
+            'http://65.0.85.219:8000/csv-visualize',
             null, // No body content for the POST request, just query params
             {
                 params: {
@@ -184,7 +184,7 @@ export const talkRepo = async (req: Request, res: Response) => {
 
         // Send a POST request to the external API
         const response = await axios.post(
-            'http://13.127.171.237:8000/search_and_answer',
+            'http://65.0.85.219:8000/search_and_answer',
             payload,
             {
                 params: { query: `${query}+' '+${repo.repoName}` }
@@ -215,7 +215,7 @@ export const talkWiki = async (req: Request, res: Response) => {
         }
 
         // Make a POST request to the external API
-        const externalResponse = await axios.post(`http://13.127.171.237:8000/wiki?query=${query}`);
+        const externalResponse = await axios.post(`http://65.0.85.219:8000/wiki?query=${query}`);
         
         const data = externalResponse.data;
         // Send the answer back to the client

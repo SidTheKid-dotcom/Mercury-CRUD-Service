@@ -75,7 +75,7 @@ export const uploadFile = async (req: Request, res: Response) => {
     const file = await storeFileLinkInDb(originalname, fileUrl);
 
     // Send the file URL to the backend
-    await axios.post('http://13.127.171.237:8000/process-file', {
+    await axios.post('http://65.0.85.219:8000/process-file', {
       file_url: file.fileUrl, // This will be sent in the request body
     });
 
@@ -107,7 +107,7 @@ export const uploadCSV = async (req: Request, res: Response) => {
     const csvUrl = `${url}/${originalname}`;
 
     // Send the file URL to the backend
-    const response = await axios.post(`http://13.127.171.237:8000/csv-process?url=${encodeURIComponent(csvUrl)}`);
+    const response = await axios.post(`http://65.0.85.219:8000/csv-process?url=${encodeURIComponent(csvUrl)}`);
 
     const { table_name } = response.data;
 
@@ -128,7 +128,7 @@ export const uploadWikiUrl = async (req: Request, res: Response) => {
   const { wikiUrl } = req.body; // GitHub URL provided by the user
 
   try {
-    const result = await axios.post(`http://13.127.171.237:8000/scrape?url=${encodeURIComponent(wikiUrl)}`);
+    const result = await axios.post(`http://65.0.85.219:8000/scrape?url=${encodeURIComponent(wikiUrl)}`);
 
     res.status(200).json({
       message: 'Wiki stored successfully',

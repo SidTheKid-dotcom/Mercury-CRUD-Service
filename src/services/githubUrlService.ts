@@ -60,7 +60,7 @@ export const fetchCoreStructure = async (owner: string, repo: string, path = '')
   }
 };
 export const indexRepo = async function (repoUrl: string) {
-  const url = 'http://13.127.171.237:8000/index_repo';
+  const url = 'http://65.0.85.219:8000/index_repo';
 
   const params = {
     repo_url: repoUrl,
