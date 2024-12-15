@@ -12,7 +12,7 @@ export const fetchRepoDetails = async (owner: string, repo: string) => {
     const response = await axios.get(`${GITHUB_API_URL}${owner}/${repo}`, {
       headers: {
         Authorization: `Bearer ${token}`, // Replace `token` with your actual GitHub Personal Access Token
-        'User-Agent': 'nilaytayade', // Replace with your app's name
+        'User-Agent': 'MyApp-Mercury', // Replace with your app's name
       },
     });
 
@@ -34,7 +34,7 @@ export const fetchCoreStructure = async (owner: string, repo: string, path = '')
     const response = await axios.get(`${GITHUB_API_URL}${owner}/${repo}/contents/${path}`, {
       headers: {
         Authorization: `Bearer ${token}`, // Replace `token` with your actual GitHub Personal Access Token
-        'User-Agent': 'SidTheKid-dotcom', // Replace with your app's name
+        'User-Agent': 'MyApp-Mercury', // Replace with your app's name
       },
     });
     const structure = await Promise.all(response.data.map(async (item: any) => {
@@ -60,7 +60,7 @@ export const fetchCoreStructure = async (owner: string, repo: string, path = '')
   }
 };
 export const indexRepo = async function (repoUrl: string) {
-  const url = 'http://65.0.85.219:8000/index_repo';
+  const url = 'http://13.127.171.237:8000/index_repo';
 
   const params = {
     repo_url: repoUrl,
