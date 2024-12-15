@@ -9,12 +9,7 @@ export const fetchRepoDetails = async (owner: string, repo: string) => {
 
     const token = process.env.GITHUB_TOKEN;
 
-    const response = await axios.get(`${GITHUB_API_URL}${owner}/${repo}`, {
-      headers: {
-        Authorization: `Bearer ${token}`, // Replace `token` with your actual GitHub Personal Access Token
-        'User-Agent': 'MyApp-Mercury', // Replace with your app's name
-      },
-    });
+    const response = await axios.get(`${GITHUB_API_URL}${owner}/${repo}`);
 
     return {
       description: response.data.description || 'No description provided.',
@@ -31,12 +26,7 @@ export const fetchCoreStructure = async (owner: string, repo: string, path = '')
 
     const token = process.env.GITHUB_TOKEN;
 
-    const response = await axios.get(`${GITHUB_API_URL}${owner}/${repo}/contents/${path}`, {
-      headers: {
-        Authorization: `Bearer ${token}`, // Replace `token` with your actual GitHub Personal Access Token
-        'User-Agent': 'MyApp-Mercury', // Replace with your app's name
-      },
-    });
+    const response = await axios.get(`${GITHUB_API_URL}${owner}/${repo}/contents/${path}`);
     const structure = await Promise.all(response.data.map(async (item: any) => {
       if (item.type === 'dir') {
         // For directories, recursively fetch nested contents
