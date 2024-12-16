@@ -12,7 +12,7 @@ export const postQuery = async (req: Request, res: Response) => {
   const { content, tags, creatorId }: PostQueryInput = req.body;
 
   try {
-    const response: any = await axios.post('http://52.66.210.49:8000/classify', {
+    /* const response: any = await axios.post('http://52.66.210.49:8000/classify', {
       "query": content
     });
 
@@ -24,7 +24,7 @@ export const postQuery = async (req: Request, res: Response) => {
     if (response.data.result === false) {
       res.status(500).json({ error: 'Spam Detected' });
       return;
-    }
+    } */
 
     const { buffer, originalname } = req.file ? req.file : { buffer: null, originalname: null };
     const bucketName = process.env.AWS_BUCKET_NAME;
