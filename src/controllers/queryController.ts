@@ -6,104 +6,126 @@ import { publishEvent } from "../services/rabbitmq";
 import { generateAIResponse } from '../services/aiService';
 import { uploadToS3 } from "../services/s3Service";
 import { extractImageTags } from "../services/aiService";
+import axios from 'axios';
 
 export const postQuery = async (req: Request, res: Response) => {
   const { content, tags, creatorId }: PostQueryInput = req.body;
 
-  const { buffer, originalname } = req.file ? req.file : { buffer: null, originalname: null };
-  const bucketName = process.env.AWS_BUCKET_NAME;
-
   try {
-    // Step 1: Upload Image to S3
-    const imageUrl = buffer ? await uploadToS3(buffer, originalname, bucketName) : '';
-
-    // Step 2: Extract Image Tags from Gemini
-    const imageTags = originalname ? await extractImageTags(imageUrl.split('/').pop()) : [];
-
-    // Step 3: Combine the existing tags and the new image tags
-    const allTags = Array.from(new Set([...tags, ...imageTags]));
-
-    const query = await prisma.query.create({
-      data: {
-        content,
-        creatorId: parseInt(creatorId, 10), // The user who created the query
-        imageUrl: imageUrl ? `${process.env.CLOUDFRONT_URL}/${imageUrl.split('/').pop()}` : '',
-        tags: {
-          connectOrCreate: allTags.map((tag) => ({
-            where: { name: tag },
-            create: { name: tag },
-          })),
-        },
-      },
-      include: { tags: true },
+    const response: any = await axios.post('http://52.66.210.49:8000/classify', {
+      "query": content
     });
 
-    // Index the query in Elasticsearch
-    await client.index({
-      index: 'queries',
-      id: query.id.toString(),
-      document: {
-        content: query.content,
-        tags: query.tags.map(tag => tag.name),
-        createdAt: query.createdAt,
-        imageUrl: query.imageUrl,
-      },
-    });
+    if (!response.data) {
+      res.status(500).json({ error: 'Spam Detection Failed' });
+      return;
+    }
 
-    const event = {
-      eventType: "QueryCreated",
-      data: {
-        queryId: query.id,
-        content: query.content,
-        tags: query.tags.map(tag => tag.name),
-        creatorId: query.creatorId,
-        createdAt: query.createdAt,
-        imageUrl: query.imageUrl
-      },
-    };
-    await publishEvent(event);
+    if (response.data.result === false) {
+      res.status(500).json({ error: 'Spam Detected' });
+      return;
+    }
 
-    // Update QueryAnalytics
-    const dateKey = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
-    const today = new Date(dateKey);
+    const { buffer, originalname } = req.file ? req.file : { buffer: null, originalname: null };
+    const bucketName = process.env.AWS_BUCKET_NAME;
 
-    await Promise.all(
-      query.tags.map(async (tag) => {
-        // Upsert QueryAnalytics for the tag
-        const queryAnalytics = await prisma.queryAnalytics.upsert({
-          where: { tagName: tag.name },
-          update: { queryCount: { increment: 1 } },
-          create: {
-            tagName: tag.name,
-            queryCount: 1, // Initial query count for a new tag
+    try {
+      // Step 1: Upload Image to S3
+      const imageUrl = buffer ? await uploadToS3(buffer, originalname, bucketName) : '';
+
+      // Step 2: Extract Image Tags from Gemini
+      const imageTags = originalname ? await extractImageTags(imageUrl.split('/').pop()) : [];
+
+      // Step 3: Combine the existing tags and the new image tags
+      const allTags = Array.from(new Set([...tags, ...imageTags]));
+
+      const query = await prisma.query.create({
+        data: {
+          content,
+          creatorId: parseInt(creatorId, 10), // The user who created the query
+          imageUrl: imageUrl ? `${process.env.CLOUDFRONT_URL}/${imageUrl.split('/').pop()}` : '',
+          tags: {
+            connectOrCreate: allTags.map((tag) => ({
+              where: { name: tag },
+              create: { name: tag },
+            })),
           },
-        });
+        },
+        include: { tags: true },
+      });
 
-        // Ensure the `queryAnalytics.id` is correctly used in DailyData
-        await prisma.dailyData.upsert({
-          where: {
-            date_queryAnalyticsId: {
-              date: today, // Ensure `today` is formatted as YYYY-MM-DD
+      // Index the query in Elasticsearch
+      await client.index({
+        index: 'queries',
+        id: query.id.toString(),
+        document: {
+          content: query.content,
+          tags: query.tags.map(tag => tag.name),
+          createdAt: query.createdAt,
+          imageUrl: query.imageUrl,
+        },
+      });
+
+      const event = {
+        eventType: "QueryCreated",
+        data: {
+          queryId: query.id,
+          content: query.content,
+          tags: query.tags.map(tag => tag.name),
+          creatorId: query.creatorId,
+          createdAt: query.createdAt,
+          imageUrl: query.imageUrl
+        },
+      };
+      await publishEvent(event);
+
+      // Update QueryAnalytics
+      const dateKey = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+      const today = new Date(dateKey);
+
+      await Promise.all(
+        query.tags.map(async (tag) => {
+          // Upsert QueryAnalytics for the tag
+          const queryAnalytics = await prisma.queryAnalytics.upsert({
+            where: { tagName: tag.name },
+            update: { queryCount: { increment: 1 } },
+            create: {
+              tagName: tag.name,
+              queryCount: 1, // Initial query count for a new tag
+            },
+          });
+
+          // Ensure the `queryAnalytics.id` is correctly used in DailyData
+          await prisma.dailyData.upsert({
+            where: {
+              date_queryAnalyticsId: {
+                date: today, // Ensure `today` is formatted as YYYY-MM-DD
+                queryAnalyticsId: queryAnalytics.id,
+              },
+            },
+            update: {
+              queries: { increment: 1 }, // Increment query count for today
+            },
+            create: {
+              date: today,
+              queries: 1, // Initial query count for the new date
+              answers: 0, // Initialize answers count
               queryAnalyticsId: queryAnalytics.id,
             },
-          },
-          update: {
-            queries: { increment: 1 }, // Increment query count for today
-          },
-          create: {
-            date: today,
-            queries: 1, // Initial query count for the new date
-            answers: 0, // Initialize answers count
-            queryAnalyticsId: queryAnalytics.id,
-          },
-        });
-      })
-    );
+          });
+        })
+      );
 
-    res.status(201).json(query);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Error posting query" });
+      res.status(201).json(query);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Error posting query" });
+    }
+  }
+  catch (error) {
+    console.log(error);
+    res.status(500).json({ error: 'Internal Server Error for Spam Detection' });
+    return;
   }
 };
 
