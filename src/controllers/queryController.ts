@@ -58,6 +58,7 @@ export const postQuery = async (req: Request, res: Response) => {
         tags: query.tags.map(tag => tag.name),
         creatorId: query.creatorId,
         createdAt: query.createdAt,
+        imageUrl: query.imageUrl
       },
     };
     await publishEvent(event);
