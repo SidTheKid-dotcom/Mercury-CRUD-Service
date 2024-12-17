@@ -130,9 +130,11 @@ export const uploadWikiUrl = async (req: Request, res: Response) => {
   try {
     const result = await axios.post(`http://65.0.85.219:8000/scrape?url=${encodeURIComponent(wikiUrl)}`);
 
+    await prisma.wiki.create({ data: { wikiUrl: wikiUrl } });
+
     res.status(200).json({
       message: 'Wiki stored successfully',
-      data: result,
+      data: result.data,
     });
   } catch (error) {
     res.status(500).json({ message: 'Error storing the wiki', error: error });
